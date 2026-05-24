@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ZARINA · Contact & Wisdom | Natural Apothecary</title>
+  <!-- Font Awesome & Google Fonts (required for icons and typography) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- GLOBAL STYLES (header, cart modal, footer, shared variables) -->
+  <link rel="stylesheet" href="global.css">
+  
+  <!-- PAGE-SPECIFIC STYLES (only for this Contact & FAQ page) -->
+  <style>
+    /* ----- Contact section (two‑column grid) ----- */
+    .contact-section {
+      padding: 4rem 0 2rem;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 0.9fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    /* Contact Form */
+    .contact-form {
+      background: var(--off-white, #FFFEF9);
+      border-radius: 28px;
+      padding: 2rem;
+      border: 1px solid #F0E3D2;
+      box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
+    }
+    .contact-form h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--gold, #C6A43F);
+      padding-left: 1rem;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--black-rich, #1F1E1A);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 48px;
+      border: 1px solid #DCCFBC;
+      background: white;
+      font-family: inherit;
+      transition: 0.2s;
+    }
+    textarea {
+      border-radius: 28px;
+      resize: vertical;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--gold, #C6A43F);
+      box-shadow: 0 0 0 2px rgba(198,164,63,0.2);
+    }
+    .submit-btn {
+      background: var(--gold, #C6A43F);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition, all 0.3s ease);
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .submit-btn:hover {
+      background: var(--deep-sage, #5E7A52);
+      color: white;
+      transform: translateY(-2px);
+    }
+    .form-message {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+      color: var(--deep-sage, #5E7A52);
+    }
+    /* Connect with Us (social icons) */
+    .connect-card {
+      background: var(--off-white, #FFFEF9);
+      border-radius: 28px;
+      padding: 2rem;
+      border: 1px solid #F0E3D2;
+      text-align: center;
+      box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
+    }
+    .connect-card h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    .connect-card p {
+      color: #5C594F;
+      margin-bottom: 2rem;
+    }
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .social-icons a {
+      background: var(--warm-beige, #FCF8F0);
+      width: 70px;
+      height: 70px;
+      border-radius: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: var(--deep-sage, #5E7A52);
+      transition: var(--transition, all 0.3s ease);
+      border: 1px solid var(--gold, #C6A43F);
+      text-decoration: none;
+    }
+    .social-icons a:hover {
+      background: var(--gold, #C6A43F);
+      color: white;
+      transform: translateY(-5px);
+    }
+
+    /* ----- FAQ Accordion section ----- */
+    .faq-section {
+      margin: 4rem 0 5rem;
+    }
+    .faq-title {
+      text-align: center;
+      font-size: 2.3rem;
+      margin-bottom: 2rem;
+    }
+    .faq-title:after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 3px;
+      background: var(--gold, #C6A43F);
+      margin: 12px auto 0;
+      border-radius: 4px;
+    }
+    .accordion {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .accordion-item {
+      background: var(--off-white, #FFFEF9);
+      border-radius: 24px;
+      margin-bottom: 1.2rem;
+      border: 1px solid #EADBC6;
+      overflow: hidden;
+      transition: 0.2s;
+    }
+    .accordion-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 1.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.1rem;
+      background: white;
+      transition: background 0.2s;
+    }
+    .accordion-question:hover {
+      background: #FCF6EA;
+    }
+    .accordion-question i {
+      color: var(--gold, #C6A43F);
+      font-size: 1.2rem;
+      transition: transform 0.3s;
+    }
+    .accordion-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.2, 0.9, 0.4, 1);
+      padding: 0 1.8rem;
+      color: #4C4A43;
+      line-height: 1.6;
+    }
+    .accordion-answer p {
+      padding-bottom: 1.5rem;
+      margin: 0;
+    }
+    .accordion-item.active .accordion-answer {
+      max-height: 200px; /* enough for answer content */
+    }
+    .accordion-item.active .accordion-question i {
+      transform: rotate(180deg);
+    }
+
+    /* Responsive adjustments (page-specific) */
+    @media (max-width: 850px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    }
+    @media (max-width: 480px) {
+      .social-icons a {
+        width: 55px;
+        height: 55px;
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== PASTE GLOBAL HEADER & CART ICON HERE ========== -->
+<!-- Header snippet from shared-html.html goes here (includes .logo, .nav-links, #cartIconBtn, #cartCountBadge) -->
+<head>
+    <link rel="stylesheet" href="global.css">
+    <script src="global.js"></script>
+</head>
+<header>
+  <div class="container">
+    <div class="navbar">
+      <a href="Zarina.html" class="loogo"><div class="logo">ZARINA</div></a>
+      <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      <div class="nav-links">
+        <a href="Zarina.html">Home</a>
+        <a href="Apothecary.html">Apothecary</a>
+        <a href="CountactUS.html">Contact</a>
+        <a href="OURstory.html">Our Story</a>
+        <a href="About.html">About</a>
+        <button class="cart-icon" id="cartIconBtn">
+          <i class="fas fa-shopping-bag"></i>
+          <span id="cartCountBadge" class="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="container">
+    <!-- CONTACT & SOCIAL (two‑column) -->
+    <div class="contact-section">
+      <div class="contact-grid">
+        <!-- Contact Form -->
+        <div class="contact-form">
+          <h2><i class="fas fa-feather-alt"></i> Send a message</h2>
+          <form id="contactForm">
+            <div class="form-group">
+              <label for="name">Full name</label>
+              <input type="text" id="name" required placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label for="email">Email address</label>
+              <input type="email" id="email" required placeholder="hello@zarina.com">
+            </div>
+            <div class="form-group">
+              <label for="message">Your message</label>
+              <textarea id="message" rows="4" required placeholder="Share your apothecary wishes..."></textarea>
+            </div>
+            <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Send</button>
+            <div id="contactFeedback" class="form-message"></div>
+          </form>
+        </div>
+
+        <!-- Connect with Us (social icons) -->
+        <div class="connect-card">
+          <h2><i class="fas fa-hand-peace"></i> Connect with us</h2>
+          <p>Follow Zarina’s journey — botanical rituals, live alchemy, and daily herbal wisdom.</p>
+          <div class="social-icons">
+            <a href="#" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" target="_blank" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="#" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          </div>
+          <p style="margin-top: 2rem; font-size:0.9rem;">✨ DM us for custom rituals & wholesale inquiries</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ ACCORDION SECTION -->
+    <div class="faq-section">
+      <h2 class="faq-title">🌿 Apothecary wisdom</h2>
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+          <div class="accordion-question">
+            <span>Are your ingredients 100% organic?</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="accordion-answer">
+            <p>Yes — every raw ingredient, oil, and botanical we source is either certified organic or wildcrafted from pristine regions. We never use synthetic pesticides or fillers. Each batch is purity‑tested.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-question">
+            <span>How long does shipping take?</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="accordion-answer">
+            <p>Orders are processed within 2‑3 business days. Domestic shipping takes 3‑7 days, international 10‑14 days. You’ll receive a tracking link as soon as your apothecary package leaves our atelier.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-question">
+            <span>Do you offer returns or exchanges?</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="accordion-answer">
+            <p>We accept returns within 14 days for unopened, unused items. For botanical preparations, we offer store credit or a blend exchange – simply contact our herbalists.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-question">
+            <span>Can I customize a blend for my skin type?</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="accordion-answer">
+            <p>Absolutely! Zarina offers a “Mix Your Own Ritual” service. You can select a base oil and herbs, and our apothecary team will create a personalised formula just for you.</p>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <div class="accordion-question">
+            <span>Are your products cruelty‑free?</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="accordion-answer">
+            <p>Always. We never test on animals, and every partner supplier is verified cruelty‑free. Our products are 100% vegan except for ethically sourced beeswax in select balms.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ========== PASTE GLOBAL CART SIDEBAR HERE ========== -->
+<!-- Cart modal (slide-out) from shared-html.html goes here (with #cartSidebar, #cartOverlay, etc.) -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="cart-items" id="cartItemsContainer">
+    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="total">
+      <span>Total</span>
+      <span id="cartTotalPrice">$0.00</span>
+    </div>
+    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+  </div>
+</div>
+<!-- ========== PASTE GLOBAL FOOTER HERE ========== -->
+<!-- Footer snippet from shared-html.html goes here -->
+<footer>
+  <div class="footer-icons">
+    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+  </div>
+  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
+  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+</footer>
+<!-- GLOBAL JAVASCRIPT (cart, mobile menu, localStorage sync) -->
+<script src="global.js"></script>
+
+<!-- PAGE-SPECIFIC JAVASCRIPT (contact form handler + accordion) -->
+<script>
+  // Contact form handler
+  const contactForm = document.getElementById('contactForm');
+  const feedbackDiv = document.getElementById('contactFeedback');
+  if (contactForm) {
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      if (!name) {
+        feedbackDiv.innerHTML = '✨ Please enter your name.';
+        feedbackDiv.style.color = '#AA862E';
+        return;
+      }
+      feedbackDiv.innerHTML = `🌿 Thank you, ${name}! Your message has been received. A Zarina herbalist will reply within 24h.`;
+      feedbackDiv.style.color = '#5E7A52';
+      contactForm.reset();
+      setTimeout(() => {
+        feedbackDiv.innerHTML = '';
+      }, 5000);
+    });
+  }
+
+  // FAQ Accordion logic (only one open at a time)
+  const accordionItems = document.querySelectorAll('.accordion-item');
+  function closeAllItems(exceptIndex = -1) {
+    accordionItems.forEach((item, idx) => {
+      if (idx !== exceptIndex) {
+        item.classList.remove('active');
+      }
+    });
+  }
+  accordionItems.forEach((item, idx) => {
+    const questionDiv = item.querySelector('.accordion-question');
+    questionDiv.addEventListener('click', () => {
+      const isActive = item.classList.contains('active');
+      closeAllItems(isActive ? -1 : idx);
+      if (!isActive) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  });
+  // Ensure all items are closed initially
+  closeAllItems();
+</script>
+</body>
+</html>

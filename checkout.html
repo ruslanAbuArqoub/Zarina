@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ZARINA · Checkout</title>
+  <!-- Font Awesome & Google Fonts (required for icons and typography) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- GLOBAL STYLES (header, cart modal, footer, shared variables) -->
+  <link rel="stylesheet" href="global.css">
+  
+  <!-- PAGE-SPECIFIC STYLES (only for this Checkout page) -->
+  <style>
+    /* Checkout two‑column grid */
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 3rem;
+      margin: 3rem 0;
+    }
+    /* Order Summary */
+    .order-summary {
+      background: var(--off-white, #FFFEF9);
+      border-radius: 28px;
+      padding: 1.8rem;
+      border: 1px solid #F0E3D2;
+      box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
+    }
+    .order-summary h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+      border-left: 4px solid var(--gold, #C6A43F);
+      padding-left: 1rem;
+    }
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid #EADBC6;
+    }
+    .summary-details {
+      font-weight: 500;
+    }
+    .summary-total {
+      margin-top: 1rem;
+      font-size: 1.3rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      border-top: 2px solid var(--gold, #C6A43F);
+      padding-top: 1rem;
+    }
+    /* Customer Form */
+    .checkout-form {
+      background: var(--off-white, #FFFEF9);
+      border-radius: 28px;
+      padding: 1.8rem;
+      border: 1px solid #F0E3D2;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--black-rich, #1F1E1A);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 48px;
+      border: 1px solid #DCCFBC;
+      background: white;
+      font-family: inherit;
+      transition: 0.2s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--gold, #C6A43F);
+      box-shadow: 0 0 0 2px rgba(198,164,63,0.2);
+    }
+    .confirm-order-btn {
+      background: var(--gold, #C6A43F);
+      border: none;
+      padding: 14px;
+      width: 100%;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition, all 0.3s ease);
+      margin-top: 0.5rem;
+    }
+    .confirm-order-btn:hover {
+      background: var(--deep-sage, #5E7A52);
+      color: white;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: var(--deep-sage, #5E7A52);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .back-link:hover {
+      color: var(--gold, #C6A43F);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 800px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== PASTE GLOBAL HEADER & CART ICON HERE ========== -->
+<!-- Header snippet from shared-html.html goes here (includes .logo, .nav-links, #cartIconBtn, #cartCountBadge) -->
+<header>
+  <div class="container">
+    <div class="navbar">
+      <a href="Zarina.html" class="loogo"><div class="logo">ZARINA</div></a>
+      <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      <div class="nav-links">
+        <a href="Zarina.html">Home</a>
+        <a href="Apothecary.html">Apothecary</a>
+        <a href="CountactUS.html">Contact</a>
+        <a href="OURstory.html">Our Story</a>
+        <a href="About.html">About</a>
+        <button class="cart-icon" id="cartIconBtn">
+          <i class="fas fa-shopping-bag"></i>
+          <span id="cartCountBadge" class="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="container">
+    <div class="checkout-grid">
+      <!-- Left: Order Summary (dynamic from localStorage) -->
+      <div class="order-summary">
+        <h2><i class="fas fa-receipt"></i> Your order</h2>
+        <div id="orderItemsList">
+          <p>Loading cart...</p>
+        </div>
+        <div id="orderTotal" class="summary-total">
+          <span>Total</span>
+          <span>$0.00</span>
+        </div>
+      </div>
+
+      <!-- Right: Customer Form -->
+      <div class="checkout-form">
+        <h2><i class="fas fa-feather-alt"></i> Shipping details</h2>
+        <form id="checkoutForm">
+          <div class="form-group">
+            <label for="fullName">Full name</label>
+            <input type="text" id="fullName" required placeholder="e.g., Zara Ahmed">
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone number</label>
+            <input type="tel" id="phone" required placeholder="+1 234 567 890">
+          </div>
+          <div class="form-group">
+            <label for="address">Shipping address</label>
+            <textarea id="address" rows="2" required placeholder="Street, city, postal code"></textarea>
+          </div>
+          <button type="submit" class="confirm-order-btn"><i class="fas fa-check-circle"></i> Confirm order</button>
+        </form>
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to store</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ========== PASTE GLOBAL CART SIDEBAR HERE ========== -->
+<!-- Cart modal (slide-out) from shared-html.html goes here (with #cartSidebar, #cartOverlay, etc.) -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="cart-items" id="cartItemsContainer">
+    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="total">
+      <span>Total</span>
+      <span id="cartTotalPrice">$0.00</span>
+    </div>
+    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+  </div>
+</div>
+<!-- ========== PASTE GLOBAL FOOTER HERE ========== -->
+<!-- Footer snippet from shared-html.html goes here -->
+<footer>
+  <div class="footer-icons">
+    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+  </div>
+  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
+  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+</footer>
+<!-- GLOBAL JAVASCRIPT (cart, mobile menu, localStorage sync) -->
+<script src="global.js"></script>
+
+<!-- PAGE-SPECIFIC JAVASCRIPT (order summary + form submission) -->
+<script>
+  // Read cart from localStorage and render order summary
+  let cart = [];
+
+  function loadCartAndRender() {
+    const saved = localStorage.getItem('zarinaCart');
+    if (saved) {
+      try {
+        cart = JSON.parse(saved);
+      } catch(e) { cart = []; }
+    } else {
+      cart = [];
+    }
+    renderOrderSummary();
+  }
+
+  function renderOrderSummary() {
+    const container = document.getElementById('orderItemsList');
+    const totalSpan = document.querySelector('#orderTotal span:last-child');
+    if (!container) return;
+
+    if (!cart || cart.length === 0) {
+      container.innerHTML = '<p>Your cart is empty. <a href="index.html" style="color: var(--gold);">Continue shopping</a></p>';
+      if (totalSpan) totalSpan.innerText = '$0.00';
+      return;
+    }
+
+    let itemsHtml = '';
+    let total = 0;
+    cart.forEach(item => {
+      const itemTotal = item.price * item.quantity;
+      total += itemTotal;
+      itemsHtml += `
+        <div class="summary-item">
+          <div class="summary-details">
+            <strong>${escapeHtml(item.name)}</strong> x ${item.quantity}
+          </div>
+          <div>$${itemTotal.toFixed(2)}</div>
+        </div>
+      `;
+    });
+    container.innerHTML = itemsHtml;
+    if (totalSpan) totalSpan.innerText = `$${total.toFixed(2)}`;
+  }
+
+  // Simple escape to prevent XSS (though product names are safe)
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // Handle order confirmation
+  const form = document.getElementById('checkoutForm');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (cart.length === 0) {
+        alert('Your cart is empty. Please add some items before checkout.');
+        return;
+      }
+      const name = document.getElementById('fullName').value.trim();
+      if (!name) {
+        alert('Please enter your full name.');
+        return;
+      }
+      // Success message
+      alert(`✨ Thank you, ${name}! ✨\nYour order has been received.\nA Zarina alchemist will prepare your remedies with gold & gratitude.`);
+
+      // Clear cart from localStorage
+      localStorage.removeItem('zarinaCart');
+      // Redirect to homepage after 2 seconds
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    });
+  }
+
+  // Initialize page
+  loadCartAndRender();
+</script>
+</body>
+</html>

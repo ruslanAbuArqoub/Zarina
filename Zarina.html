@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Zarina Raw Ingredients | Natural Apothecary</title>
+  <!-- Google Fonts & Font Awesome (required for icons and typography) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <!-- GLOBAL STYLES (shared header, cart, footer) -->
+  <link rel="stylesheet" href="global.css">
+  
+  <!-- PAGE-SPECIFIC STYLES (only for this homepage) -->
+  <style>
+    /* ----- PAGE-SPECIFIC VARIABLES (inherits global palette) ----- */
+    :root {
+      --herb-green: #2F5D3A;
+      --deep-forest: #1E3A2A;
+      --gold: #C6A43F;
+      --cream: #FEF7E8;
+      --transition-smooth: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+
+    /* Hero section (unique to this page) */
+    .hero {
+      height: 80vh;
+      background-image: url('https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      padding: 5rem 1rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid rgba(198, 164, 63, 0.3);
+    }
+    .hero::before {
+      content: "🌿";
+      font-size: 200px;
+      opacity: 0.04;
+      position: absolute;
+      bottom: -30px;
+      right: -20px;
+      pointer-events: none;
+      transform: rotate(-15deg);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      animation: fadeUp 0.9s ease-out;
+    }
+    .hero h1 {
+      font-size: 3.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #2A5C38, #C6A43F);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      color: #3B3A36;
+    }
+    .hero-btn {
+      background: var(--deep-forest);
+      color: var(--cream);
+      border: none;
+      padding: 12px 32px;
+      font-weight: 600;
+      border-radius: 40px;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .hero-btn:hover {
+      background: var(--gold);
+      color: #1F2E1C;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+    }
+
+    /* Products section */
+    .products-section {
+      padding: 3rem 0 5rem;
+    }
+    .section-title {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .section-title:after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 3px;
+      background: var(--gold);
+      margin: 12px auto 0;
+      border-radius: 4px;
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+    /* product cards */
+    .product-card {
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      transition: var(--transition-smooth);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+      border: 1px solid #f0e7da;
+      cursor: default;
+      animation: cardAppear 0.6s ease backwards;
+    }
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 30px -12px rgba(47, 93, 58, 0.2);
+      border-color: rgba(198, 164, 63, 0.5);
+    }
+    .product-img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .product-card:hover .product-img {
+      transform: scale(1.03);
+    }
+    .product-info {
+      padding: 1.3rem;
+    }
+    .product-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+      color: var(--deep-forest);
+    }
+    .product-desc {
+      font-size: 0.85rem;
+      color: #5C5B57;
+      margin: 0.5rem 0 0.8rem;
+      line-height: 1.4;
+    }
+    .price {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+    .add-to-cart {
+      background: none;
+      border: 1.5px solid var(--herb-green);
+      padding: 0.6rem 1rem;
+      width: 100%;
+      border-radius: 40px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      background: white;
+      color: var(--herb-green);
+    }
+    .add-to-cart:hover {
+      background: var(--herb-green);
+      color: white;
+      border-color: var(--herb-green);
+      transform: scale(0.97);
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      0% { opacity: 0; transform: translateY(25px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cardAppear {
+      0% { opacity: 0; transform: translateY(30px);}
+      100% { opacity: 1; transform: translateY(0);}
+    }
+
+    /* Responsive adjustments (only page-specific) */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.4rem;
+      }
+      .section-title {
+        font-size: 2rem;
+      }
+      .products-grid {
+        gap: 1.2rem;
+      }
+    }
+    @media (max-width: 480px) {
+      .hero {
+        padding: 3rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== PASTE GLOBAL HEADER HERE (includes navigation and cart icon) ========== -->
+<!-- Header snippet from shared-html.html goes here -->
+<header>
+  <div class="container">
+    <div class="navbar">
+      <a href="Zarina.html" class="loogo"><div class="logo">ZARINA</div></a>
+      <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      <div class="nav-links">
+        <a href="Zarina.html">Home</a>
+        <a href="Apothecary.html">Apothecary</a>
+        <a href="CountactUS.html">Contact</a>
+        <a href="OURstory.html">Our Story</a>
+        <a href="About.html">About</a>
+        <button class="cart-icon" id="cartIconBtn">
+          <i class="fas fa-shopping-bag"></i>
+          <span id="cartCountBadge" class="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Hero with prominent phrase -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Zarina Raw Ingredients</h1>
+      <p>Ancient wisdom · Wildcrafted botanicals · Cold-pressed oils</p>
+      <button class="hero-btn" id="shopNowBtn">Explore collection <i class="fas fa-leaf"></i></button>
+    </div>
+  </section>
+
+  <div class="container products-section">
+    <h2 class="section-title">From earth, with intention</h2>
+    <div id="productsGrid" class="products-grid"></div>
+  </div>
+</main>
+
+<!-- ========== PASTE GLOBAL CART SIDEBAR HERE ========== -->
+<!-- Cart sidebar modal from shared-html.html goes here -->
+
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="cart-items" id="cartItemsContainer">
+    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="total">
+      <span>Total</span>
+      <span id="cartTotalPrice">$0.00</span>
+    </div>
+    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+  </div>
+</div>
+
+<!-- ========== PASTE GLOBAL FOOTER HERE ========== -->
+<!-- Footer snippet from shared-html.html goes here -->
+
+<footer>
+  <div class="footer-icons">
+    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+  </div>
+  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
+  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+</footer>
+
+<!-- GLOBAL JAVASCRIPT (cart, mobile menu, etc.) -->
+<script src="global.js"></script>
+
+<!-- PAGE-SPECIFIC JAVASCRIPT (only product rendering and scroll) -->
+<script>
+  // ---------- PRODUCT DATA (only used on this page) ----------
+  const products = [
+    { id: 1, name: "Golden Rosehip Seed Oil", price: 24, desc: "Cold-pressed, regenerative & rich in vitamin C", img: "https://placehold.co/400x300?text=Rosehip+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
+    { id: 2, name: "Calendula & Chamomile Salve", price: 28, desc: "Soothing balm for sensitive & irritated skin", img: "https://placehold.co/400x300?text=Calendula+Salve&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
+    { id: 3, name: "Lavender Dream Oil", price: 19, desc: "100% organic lavender, calming & anti-inflammatory", img: "https://placehold.co/400x300?text=Lavender+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
+    { id: 4, name: "Herbal Glow Face Serum", price: 34, desc: "Squalane + adaptogens for dewy radiance", img: "https://placehold.co/400x300?text=Glow+Serum&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
+    { id: 5, name: "Healing Balm (Zarina Blend)", price: 32, desc: "Infused with comfrey, plantain & beeswax", img: "https://placehold.co/400x300?text=Healing+Balm&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
+    { id: 6, name: "Nourishing Body Oil", price: 27, desc: "Jojoba & sea buckthorn, silky hydration", img: "https://placehold.co/400x300?text=Body+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" }
+  ];
+
+  // DOM elements
+  const productsGrid = document.getElementById('productsGrid');
+  const shopNowBtn = document.getElementById('shopNowBtn');
+
+  // Render product cards dynamically
+  function renderProducts() {
+    if (!productsGrid) return;
+    productsGrid.innerHTML = '';
+    products.forEach((prod, index) => {
+      const card = document.createElement('div');
+      card.classList.add('product-card');
+      card.style.animationDelay = `${index * 0.05}s`;
+      card.innerHTML = `
+        <img class="product-img" src="${prod.img}" alt="${prod.name}" loading="lazy">
+        <div class="product-info">
+          <div class="product-title">${prod.name}</div>
+          <div class="product-desc">${prod.desc}</div>
+          <div class="price">$${prod.price}</div>
+          <button class="add-to-cart" data-id="${prod.id}"><i class="fas fa-shopping-bag"></i> Add to cart</button>
+        </div>
+      `;
+      productsGrid.appendChild(card);
+    });
+
+    // Attach add-to-cart events using global function provided by global.js
+    document.querySelectorAll('.add-to-cart').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const productId = parseInt(btn.getAttribute('data-id'));
+        const product = products.find(p => p.id === productId);
+        if (product && typeof window.addToCart === 'function') {
+          window.addToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            img: product.img
+          });
+        }
+      });
+    });
+  }
+
+  // Smooth scroll to products section
+  function scrollToProducts() {
+    const productsSection = document.querySelector('.products-section');
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  // Event listener for hero button
+  if (shopNowBtn) {
+    shopNowBtn.addEventListener('click', scrollToProducts);
+  }
+
+  // Initialize product grid
+  renderProducts();
+</script>
+</body>
+</html>

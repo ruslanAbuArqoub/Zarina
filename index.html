@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ZARINA · Natural Apothecary</title>
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ----- GLOBAL STYLES (shared with checkout) ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --warm-beige: #FCF8F0;
+      --ivory: #FEF7E8;
+      --gold: #C6A43F;
+      --dark-gold: #AA862E;
+      --black-rich: #1F1E1A;
+      --sage: #7B9C6E;
+      --deep-sage: #5E7A52;
+      --off-white: #FFFEF9;
+      --shadow: 0 12px 28px -8px rgba(0,0,0,0.08);
+      --transition: all 0.3s cubic-bezier(0.2,0.9,0.4,1.1);
+    }
+    body {
+      background-color: var(--warm-beige);
+      font-family: 'Inter', sans-serif;
+      color: var(--black-rich);
+      line-height: 1.5;
+    }
+    h1, h2, h3, .serif {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* ----- HEADER (sticky, same on both pages) ----- */
+    header {
+      background: rgba(255, 252, 245, 0.96);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+      border-bottom: 1px solid rgba(198,164,63,0.2);
+    }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .logo {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1E1A0C 30%, var(--gold) 80%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      transition: var(--transition);
+    }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--black-rich);
+      font-weight: 500;
+      transition: var(--transition);
+      position: relative;
+    }
+    .nav-links a:after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: var(--gold);
+      transition: 0.3s ease;
+    }
+    .nav-links a:hover:after {
+      width: 100%;
+    }
+    .cart-icon {
+      position: relative;
+      cursor: pointer;
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      color: var(--deep-sage);
+      transition: transform 0.2s;
+    }
+    .cart-icon:hover {
+      transform: scale(1.08);
+      color: var(--gold);
+    }
+    .cart-count {
+      position: absolute;
+      top: -10px;
+      right: -12px;
+      background: var(--gold);
+      color: #1E1A0C;
+      font-size: 0.7rem;
+      font-weight: bold;
+      border-radius: 30px;
+      padding: 2px 7px;
+      font-family: monospace;
+    }
+
+    /* ----- PRODUCT GRID (demo) ----- */
+    .hero-banner {
+      text-align: center;
+      padding: 3rem 0 1rem;
+    }
+    .hero-banner h1 {
+      font-size: 3rem;
+      background: linear-gradient(135deg, #2C2B26, var(--gold));
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+      margin: 3rem 0;
+    }
+    .product-card {
+      background: var(--off-white);
+      border-radius: 28px;
+      overflow: hidden;
+      transition: var(--transition);
+      border: 1px solid #F0E3D2;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+      border-color: var(--gold);
+    }
+    .product-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 20px;
+    }
+    .product-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 0.8rem 0 0.3rem;
+    }
+    .product-price {
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+    }
+    .add-to-cart {
+      background: none;
+      border: 1.5px solid var(--gold);
+      padding: 10px 0;
+      width: 100%;
+      border-radius: 40px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition);
+      cursor: pointer;
+      background: white;
+      color: var(--deep-sage);
+    }
+    .add-to-cart:hover {
+      background: var(--gold);
+      color: #1E1C17;
+      transform: scale(0.97);
+    }
+
+    /* ----- SLIDE-OUT CART (shared) ----- */
+    .cart-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(3px);
+      z-index: 200;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.25s ease;
+    }
+    .cart-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .cart-sidebar {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 90%;
+      max-width: 420px;
+      height: 100%;
+      background: #FFFBF5;
+      box-shadow: -5px 0 30px rgba(0,0,0,0.2);
+      z-index: 201;
+      transition: right 0.35s ease-out;
+      display: flex;
+      flex-direction: column;
+    }
+    .cart-sidebar.open {
+      right: 0;
+    }
+    .cart-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #EADBC6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-header h3 {
+      font-size: 1.6rem;
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .close-cart {
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+    }
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .cart-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 1.2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px dashed #e2d5c4;
+    }
+    .cart-item-img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+    .cart-item-details {
+      flex: 1;
+    }
+    .cart-item-name {
+      font-weight: 700;
+    }
+    .cart-item-price {
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .cart-qty {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .qty-btn {
+      background: #f0e9de;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .remove-item {
+      background: none;
+      border: none;
+      color: #b67e45;
+      margin-left: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .cart-footer {
+      padding: 1.5rem;
+      border-top: 1px solid #EADBC6;
+    }
+    .total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 800;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .checkout-action-btn {
+      width: 100%;
+      background: var(--gold);
+      border: none;
+      padding: 12px;
+      border-radius: 60px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .checkout-action-btn:hover {
+      background: var(--deep-sage);
+      color: white;
+    }
+    .empty-cart-msg {
+      text-align: center;
+      color: #9a8e7a;
+      padding: 2rem;
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1E3A2A;
+      color: #F7EBD8;
+      padding: 12px 24px;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      z-index: 300;
+      opacity: 0;
+      transition: 0.2s;
+      pointer-events: none;
+    }
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    footer {
+      background: #2B2A24;
+      color: #EADBC6;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    @media (max-width: 760px) {
+      .container { padding: 0 20px; }
+      .nav-links { gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="navbar">
+      <div class="logo">ZARINA ⚜️</div>
+      <div class="nav-links">
+        <a href="#">Apothecary</a>
+        <a href="#">Rituals</a>
+        <a href="#">Our Story</a>
+        <button class="cart-icon" id="cartIconBtn">
+          <i class="fas fa-shopping-bag"></i>
+          <span id="cartCountBadge" class="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="hero-banner">
+      <h1>Pure alchemy for skin & soul</h1>
+      <p style="margin-top: 0.5rem;">Wildcrafted oils · Raw herbs · Golden rituals</p>
+    </div>
+    <div id="productsGrid" class="product-grid"></div>
+  </div>
+</main>
+
+<footer>
+  <p>Zarina Raw Ingredients — ethically sourced · cruelty free</p>
+  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary</p>
+</footer>
+
+<!-- Cart Slide-out -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="cart-items" id="cartItemsContainer">
+    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="total">
+      <span>Total</span>
+      <span id="cartTotalPrice">$0.00</span>
+    </div>
+    <button class="checkout-action-btn" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+  </div>
+</div>
+<div id="toastMsg" class="toast-msg">✨ Added to your apothecary</div>
+
+<script>
+  // -------------------------------
+  // 1. PRODUCT CATALOG (demo)
+  // -------------------------------
+  const products = [
+    { id: 1, name: "Golden Rosehip Oil", price: 34, img: "https://placehold.co/400x300?text=Rosehip+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" },
+    { id: 2, name: "Calendula & Chamomile Salve", price: 28, img: "https://placehold.co/400x300?text=Calendula+Salve&font=montserrat&bg=FDF5EA&textColor=8B6946" },
+    { id: 3, name: "Lavender Dream Oil", price: 26, img: "https://placehold.co/400x300?text=Lavender+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" },
+    { id: 4, name: "Nourishing Body Oil (Jojoba)", price: 32, img: "https://placehold.co/400x300?text=Body+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" }
+  ];
+
+  // -------------------------------
+  // 2. CART STATE & LOCALSTORAGE (shared across pages)
+  // -------------------------------
+  let cart = [];
+
+  // Helper: save cart to localStorage
+  function saveCart() {
+    localStorage.setItem('zarinaCart', JSON.stringify(cart));
+  }
+
+  // Load cart from localStorage
+  function loadCart() {
+    const saved = localStorage.getItem('zarinaCart');
+    if (saved) {
+      try {
+        cart = JSON.parse(saved);
+      } catch(e) { cart = []; }
+    } else {
+      cart = [];
+    }
+    updateCartUI();
+  }
+
+  // Update UI: badge, total, sidebar list
+  function updateCartUI() {
+    const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+    document.getElementById('cartCountBadge').innerText = totalItems;
+    const totalPrice = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    document.getElementById('cartTotalPrice').innerText = `$${totalPrice.toFixed(2)}`;
+
+    const container = document.getElementById('cartItemsContainer');
+    if (cart.length === 0) {
+      container.innerHTML = `<div class="empty-cart-msg"><i class="fas fa-seedling"></i> Your cart is empty, dear one.</div>`;
+      return;
+    }
+    container.innerHTML = '';
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.id) || { img: "https://placehold.co/60x60?text=oil" };
+      const div = document.createElement('div');
+      div.className = 'cart-item';
+      div.innerHTML = `
+        <img src="${product.img}" class="cart-item-img" alt="${item.name}">
+        <div class="cart-item-details">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">$${item.price}</div>
+          <div class="cart-qty">
+            <button class="qty-btn" data-id="${item.id}" data-delta="-1">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" data-id="${item.id}" data-delta="1">+</button>
+            <button class="remove-item" data-id="${item.id}">remove</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    // attach quantity/remove events
+    document.querySelectorAll('.qty-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.dataset.id);
+        const delta = parseInt(btn.dataset.delta);
+        adjustQuantity(id, delta);
+      });
+    });
+    document.querySelectorAll('.remove-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.dataset.id);
+        removeFromCart(id);
+      });
+    });
+  }
+
+  function adjustQuantity(productId, delta) {
+    const item = cart.find(i => i.id === productId);
+    if (item) {
+      const newQty = item.quantity + delta;
+      if (newQty <= 0) {
+        cart = cart.filter(i => i.id !== productId);
+      } else {
+        item.quantity = newQty;
+      }
+      saveCart();
+      updateCartUI();
+      showToast(delta > 0 ? 'Quantity increased' : 'Quantity decreased');
+    }
+  }
+
+  function removeFromCart(productId) {
+    cart = cart.filter(i => i.id !== productId);
+    saveCart();
+    updateCartUI();
+    showToast('Item removed');
+  }
+
+  function addToCart(product) {
+    const existing = cart.find(i => i.id === product.id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ id: product.id, name: product.name, price: product.price, quantity: 1 });
+    }
+    saveCart();
+    updateCartUI();
+    showToast(`➕ ${product.name} added`);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  // -------------------------------
+  // 3. RENDER PRODUCT GRID
+  // -------------------------------
+  function renderProducts() {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    products.forEach(prod => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img class="product-img" src="${prod.img}" alt="${prod.name}" loading="lazy">
+        <div class="product-title">${prod.name}</div>
+        <div class="product-price">$${prod.price}</div>
+        <button class="add-to-cart" data-id="${prod.id}"><i class="fas fa-shopping-bag"></i> Add to cart</button>
+      `;
+      grid.appendChild(card);
+    });
+    document.querySelectorAll('.add-to-cart').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(btn.dataset.id);
+        const product = products.find(p => p.id === id);
+        if (product) addToCart(product);
+      });
+    });
+  }
+
+  // -------------------------------
+  // 4. SLIDE-OUT CART CONTROLS + PROCEED TO CHECKOUT
+  // -------------------------------
+  const cartSidebar = document.getElementById('cartSidebar');
+  const cartOverlay = document.getElementById('cartOverlay');
+  function openCart() {
+    cartSidebar.classList.add('open');
+    cartOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCart() {
+    cartSidebar.classList.remove('open');
+    cartOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('cartIconBtn').addEventListener('click', openCart);
+  document.getElementById('closeCartBtn').addEventListener('click', closeCart);
+  cartOverlay.addEventListener('click', closeCart);
+
+  // PROCEED TO CHECKOUT button inside cart footer
+  const proceedBtn = document.getElementById('proceedCheckoutBtn');
+  if (proceedBtn) {
+    proceedBtn.addEventListener('click', () => {
+      if (cart.length === 0) {
+        showToast('Your cart is empty – add some treasures first');
+        return;
+      }
+      window.location.href = 'checkout.html';
+    });
+  }
+
+  // -------------------------------
+  // 5. INITIALIZE PAGE
+  // -------------------------------
+  renderProducts();
+  loadCart();
+</script>
+</body>
+</html>
