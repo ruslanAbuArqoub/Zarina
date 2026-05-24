@@ -175,7 +175,7 @@
       margin-top: 6px;
       margin-bottom: 12px;
     }
-    .add-to-cart-btn {
+    .add-to-cart {
       background: none;
       border: 1.5px solid var(--gold, #C6A43F);
       padding: 8px 12px;
@@ -192,7 +192,7 @@
       color: var(--herb-green, #2F5D3A);
       margin-top: 8px;
     }
-    .add-to-cart-btn:hover {
+    .add-to-cart:hover {
       background: var(--gold, #C6A43F);
       color: #1E1C17;
       transform: scale(0.97);
@@ -291,85 +291,6 @@
       margin-right: 8px;
     }
 
-    /* Mix Your Own form */
-    .custom-blend {
-      background: #FAF6EF;
-      border-radius: 32px;
-      padding: 2rem 2rem 2.5rem;
-      margin: 3rem 0 4rem;
-      border: 1px solid #EAD5BB;
-      box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
-    }
-    .custom-blend h3 {
-      font-size: 1.9rem;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-    select, .checkbox-group {
-      width: 100%;
-      padding: 12px 16px;
-      border-radius: 48px;
-      border: 1px solid #DCCFBC;
-      background: white;
-      font-family: inherit;
-    }
-    select:focus {
-      outline: none;
-      border-color: var(--gold, #C6A43F);
-    }
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      border: none;
-      padding: 0;
-    }
-    .checkbox-group label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 400;
-      background: #FFF8EF;
-      padding: 6px 16px;
-      border-radius: 40px;
-      border: 1px solid #E0D0BC;
-    }
-    input[type="checkbox"] {
-      accent-color: var(--gold, #C6A43F);
-      width: 16px;
-      height: 16px;
-    }
-    .submit-blend {
-      background: var(--gold, #C6A43F);
-      border: none;
-      padding: 12px 28px;
-      font-weight: 700;
-      border-radius: 60px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: var(--transition, all 0.3s ease);
-      color: #1E1C17;
-      width: 100%;
-    }
-    .submit-blend:hover {
-      background: var(--deep-sage, #5E7A52);
-      color: white;
-    }
-    .form-message {
-      margin-top: 1rem;
-      text-align: center;
-      font-weight: 500;
-      color: var(--deep-sage, #5E7A52);
-    }
-
     /* Responsive */
     @media (max-width: 760px) {
       .hero-apothecary h1 {
@@ -397,15 +318,14 @@
 </head>
 <body>
 
-<!-- ========== PASTE GLOBAL HEADER & CART ICON HERE ========== -->
-<!-- Header snippet from shared-html.html goes here (includes .logo, .nav-links, #cartIconBtn, #cartCountBadge) -->
+<!-- Header -->
 <header>
   <div class="container">
     <div class="navbar">
-      <a href="Zarina.html" class="loogo"><div class="logo">ZARINA</div></a>
+      <a href="index.html" class="loogo"><div class="logo">ZARINA</div></a>
       <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
       <div class="nav-links">
-        <a href="Zarina.html">Home</a>
+        <a href="index.html">Home</a>
         <a href="Apothecary.html">Apothecary</a>
         <a href="CountactUS.html">Contact</a>
         <a href="OURstory.html">Our Story</a>
@@ -418,6 +338,7 @@
     </div>
   </div>
 </header>
+
 <main>
   <section class="hero-apothecary">
     <div class="container">
@@ -438,15 +359,23 @@
     <!-- Product grid with filters -->
     <div class="products-heading">
       <h2>✦ Ceremonial selections</h2>
-      <p style="color: #7B6E58;">Oils · Raw ingredients · Botanicals</p>
+      <p style="color: #7B6E58;">
+          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="oils">Oils</a> · 
+          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="ingredients">Raw ingredients</a> · 
+          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="botanicals">Botanicals</a>
+      </p>
     </div>
+    
+    <!-- Filter Buttons -->
     <div class="filter-section" id="filterButtons">
       <button class="filter-btn active" data-filter="all">All</button>
       <button class="filter-btn" data-filter="skin">Skin</button>
       <button class="filter-btn" data-filter="hair">Hair</button>
       <button class="filter-btn" data-filter="relaxation">Relaxation</button>
     </div>
-    <div id="productGridContainer" class="product-grid"></div>
+    
+    <!-- مكان عرض منتجات الفايربيس -->
+    <div id="products-container" class="product-grid"></div>
 
     <!-- DIY recipe flip cards -->
     <div class="recipes-section">
@@ -511,40 +440,10 @@
         </div>
       </div>
     </div>
-
-    <!-- Mix Your Own Form -->
-    <div class="custom-blend">
-      <h3>🌿 Mix Your Own Ritual</h3>
-      <p style="text-align: center; margin-bottom: 1.5rem;">Design a personalized botanical blend — Zarina artisans will craft it for you.</p>
-      <form id="customBlendForm">
-        <div class="form-group">
-          <label for="baseOil">Select base oil 🌱</label>
-          <select id="baseOil" required>
-            <option value="Jojoba Oil">Jojoba Oil — weightless hydration</option>
-            <option value="Rosehip Seed Oil">Rosehip Seed Oil — regenerative</option>
-            <option value="Argan Oil">Argan Oil — vitamin E richness</option>
-            <option value="Squalane">Zarina Squalane (olive derived)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Herbal infusions (choose up to 3)</label>
-          <div class="checkbox-group" id="herbCheckboxes">
-            <label><input type="checkbox" value="Lavender"> Lavender · calm</label>
-            <label><input type="checkbox" value="Chamomile"> Chamomile · soothe</label>
-            <label><input type="checkbox" value="Rosemary"> Rosemary · stimulate</label>
-            <label><input type="checkbox" value="Calendula"> Calendula · repair</label>
-            <label><input type="checkbox" value="Holy Basil"> Holy Basil · clarity</label>
-          </div>
-        </div>
-        <button type="submit" class="submit-blend"><i class="fas fa-mortar-pestle"></i> Request custom blend</button>
-        <div id="formFeedback" class="form-message"></div>
-      </form>
-    </div>
   </div>
 </main>
 
-<!-- ========== PASTE GLOBAL CART SIDEBAR HERE ========== -->
-<!-- Cart modal (slide-out) from shared-html.html goes here (with #cartSidebar, #cartOverlay, etc.) -->
+<!-- Cart modal -->
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-sidebar" id="cartSidebar">
   <div class="cart-header">
@@ -562,8 +461,8 @@
     <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
   </div>
 </div>
-<!-- ========== PASTE GLOBAL FOOTER HERE ========== -->
-<!-- Footer snippet from shared-html.html goes here -->
+
+<!-- Footer -->
 <footer>
   <div class="footer-icons">
     <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -573,101 +472,43 @@
   <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
   <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
 </footer>
-<!-- GLOBAL JAVASCRIPT (cart, mobile menu, localStorage sync) -->
-<script src="global.js"></script>
 
-<!-- PAGE-SPECIFIC JAVASCRIPT (product filtering, flip cards, custom blend form) -->
+<!-- استدعاء ملفات الفايربيس (ضروري لعرض المنتجات) -->
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="global.js"></script>
+
+<!-- PAGE-SPECIFIC JAVASCRIPT (نظام الفلترة فقط بعد إزالة نموذج الخلطة) -->
 <script>
-  // Product catalog (used only on this page)
-  const productsCatalog = [
-    { id: 1, name: "Wild Rosehip Regeneration Oil", price: 34, category: "Oils", tags: ["skin"], desc: "Cold-pressed, rich in vitamin C & omegas.", img: "https://placehold.co/400x300?text=Rosehip+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 2, name: "Argan & Marula Silk", price: 42, category: "Oils", tags: ["hair", "skin"], desc: "Lightweight, high antioxidant — for glow & strength.", img: "https://placehold.co/400x300?text=Argan+Marula&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 3, name: "Lavender Dream Oil", price: 28, category: "Oils", tags: ["relaxation", "skin"], desc: "Calming, anti-inflammatory, evening ritual.", img: "https://placehold.co/400x300?text=Lavender+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 4, name: "Raw Shea Butter (unrefined)", price: 22, category: "Raw Ingredients", tags: ["skin", "hair"], desc: "Ultra-nourishing, protect + repair barrier.", img: "https://placehold.co/400x300?text=Shea+Butter&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 5, name: "Brahmi & Amla Powder", price: 19, category: "Raw Ingredients", tags: ["hair"], desc: "Ayurvedic herbs for growth & luster.", img: "https://placehold.co/400x300?text=Brahmi+Amla&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 6, name: "Calendula Petals (organic)", price: 16, category: "Botanicals", tags: ["skin"], desc: "Soothing infused oils & salves.", img: "https://placehold.co/400x300?text=Calendula+Petals&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 7, name: "Chamomile Flowers", price: 15, category: "Botanicals", tags: ["relaxation", "skin"], desc: "Gentle, calming for sensitive skin.", img: "https://placehold.co/400x300?text=Chamomile+Blossom&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 8, name: "Rosemary Leaf (wildcrafted)", price: 14, category: "Botanicals", tags: ["hair"], desc: "Stimulate scalp, boost density.", img: "https://placehold.co/400x300?text=Rosemary+Leaf&font=montserrat&bg=FDF5EA&textColor=8B6946" },
-    { id: 9, name: "Jojoba Gold Oil", price: 30, category: "Oils", tags: ["skin", "hair"], desc: "Mimics skin’s sebum, ultimate daily nectar.", img: "https://placehold.co/400x300?text=Jojoba+Oil&font=montserrat&bg=FDF5EA&textColor=8B6946" }
-  ];
-
-  // DOM elements
-  const productContainer = document.getElementById("productGridContainer");
-  const filterBtns = document.querySelectorAll(".filter-btn");
-  let activeFilter = "all";
-
-  // Render product grid with "Add to cart" buttons (using global window.addToCart)
-  function renderProducts() {
-    let filtered = activeFilter === "all" ? [...productsCatalog] : productsCatalog.filter(p => p.tags.includes(activeFilter));
-    if (filtered.length === 0) {
-      productContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem;">No products for this ritual, explore other categories ✨</div>`;
-      return;
-    }
-    productContainer.innerHTML = filtered.map(product => `
-      <div class="product-card">
-        <img class="product-img" src="${product.img}" alt="${product.name}" loading="lazy">
-        <div class="product-info">
-          <div class="product-title">${product.name}</div>
-          <div class="product-cat">${product.category}</div>
-          <div class="product-tags">${product.tags.map(t => `<span class="tag-badge">${t}</span>`).join('')}</div>
-          <div class="product-desc">${product.desc}</div>
-          <div style="font-weight:700; color:var(--gold); margin:6px 0;">$${product.price}</div>
-          <button class="add-to-cart-btn" data-id="${product.id}"><i class="fas fa-shopping-bag"></i> Add to cart</button>
-        </div>
-      </div>
-    `).join('');
-    // Attach event listeners using global addToCart function
-    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = parseInt(btn.dataset.id);
-        const product = productsCatalog.find(p => p.id === id);
-        if (product && typeof window.addToCart === 'function') {
-          window.addToCart({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            img: product.img
-          });
-        }
-      });
-    });
-  }
-
-  // Filter handling
-  function setActiveFilter(filter) {
-    activeFilter = filter;
-    renderProducts();
-    filterBtns.forEach(btn => {
-      if (btn.dataset.filter === activeFilter) btn.classList.add("active");
-      else btn.classList.remove("active");
-    });
-  }
-  filterBtns.forEach(btn => btn.addEventListener("click", () => setActiveFilter(btn.dataset.filter)));
-
-  // Custom blend form handler
-  const blendForm = document.getElementById("customBlendForm");
-  const feedbackDiv = document.getElementById("formFeedback");
-  if (blendForm) {
-    blendForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const baseOilSelect = document.getElementById("baseOil");
-      const baseOil = baseOilSelect.options[baseOilSelect.selectedIndex]?.text.split(" —")[0] || baseOilSelect.value;
-      const herbs = Array.from(document.querySelectorAll("#herbCheckboxes input:checked")).map(cb => cb.value);
-      if (herbs.length === 0) {
-        feedbackDiv.innerHTML = "🌿 Please select at least one herb.";
-        feedbackDiv.style.color = "#AA862E";
-        return;
-      }
-      feedbackDiv.innerHTML = `✨ Thank you! Your custom blend: ${baseOil} base + ${herbs.join(", ")} herbs. A Zarina alchemist will reach out. ✨`;
-      feedbackDiv.style.color = "#5E7A52";
-      setTimeout(() => {
-        feedbackDiv.innerHTML = '';
-      }, 5000);
-    });
-  }
-
-  // Initialize product grid
-  renderProducts();
+  document.addEventListener('DOMContentLoaded', () => {
+    // نظام الفلترة الذكي لمنتجات الفايربيس
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    setTimeout(() => {
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // تعديل التصميم للزر النشط
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filterValue = btn.getAttribute('data-filter').toLowerCase();
+                const allProducts = document.querySelectorAll('.product-card');
+                
+                allProducts.forEach(card => {
+                    const cardText = card.innerText.toLowerCase();
+                    
+                    if (filterValue === 'all' || cardText.includes(filterValue)) {
+                        card.style.display = 'block'; 
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }, 1500); 
+  });
 </script>
+
 </body>
 </html>

@@ -111,10 +111,10 @@
       });
     }
 
-    // Quantity button handler
+    // Quantity button handler (تم إزالة parseInt لحل مشكلة الفايربيس)
     function handleQtyClick(e) {
       const btn = e.currentTarget;
-      const productId = parseInt(btn.dataset.id);
+      const productId = btn.dataset.id; // خليناها تأخذ الـ ID زي ما هو كنص
       const delta = parseInt(btn.dataset.delta);
       adjustQuantity(productId, delta);
     }
@@ -143,9 +143,10 @@
       showToast('Item removed');
     }
 
+    // (تم إزالة parseInt لحل مشكلة الفايربيس)
     function handleRemoveClick(e) {
       const btn = e.currentTarget;
-      const productId = parseInt(btn.dataset.id);
+      const productId = btn.dataset.id;
       removeFromCart(productId);
     }
 
@@ -224,3 +225,77 @@
     loadCart();
   });
 })();
+
+// ==========================================
+// ========== FIREBASE INTEGRATION ==========
+// ==========================================
+
+import { app } from './firebase-config.js';
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const db = getFirestore(app);
+
+async function loadProducts() {
+    try {
+        const productsCollection = collection(db, "products");
+        const querySnapshot = await getDocs(productsCollection);
+        
+        const productsContainer = document.getElementById('products-container'); 
+        if(!productsContainer) return;
+        
+        let htmlString = '';
+        let index = 0; 
+        
+        querySnapshot.forEach((doc) => {
+            const product = doc.data();
+            
+            // استخدمنا نفس كلاساتك الأصلية 100% ورتبنا المتغيرات جوا الأزرار
+            htmlString += `
+                <div class="product-card" style="animation-delay: ${index * 0.05}s">
+                    <img class="product-img" src="${product.imageUrl}" alt="${product.name}" loading="lazy">
+                    <div class="product-info">
+                        <div class="product-title">${product.name}</div>
+                        <div class="product-category" style="color: #C6A43F; font-size: 0.75rem; font-weight: 600; letter-spacing: 1.5px; margin-top: 0.2rem; margin-bottom: 0.8rem;">
+                            ${product.category ? product.category.toUpperCase() : 'RAW INGREDIENTS'}
+                        </div>
+                        
+                        <div class="product-tags" style="display: flex; gap: 8px; margin-bottom: 0.8rem;">
+                            <span class="tag" style="background: #EFECE6; color: #5C5B57; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem;">skin</span>
+                            <span class="tag" style="background: #EFECE6; color: #5C5B57; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem;">hair</span>
+                        </div>
+                        
+                        <div class="product-desc">${product.description || 'Ultra-nourishing, protect + repair barrier.'}</div>
+                        <div class="price">$${product.price}</div>
+                        
+                        <button class="add-to-cart firecart-btn" data-id="${doc.id}" data-name="${product.name}" data-price="${product.price}" data-img="${product.imageUrl}">
+                            <i class="fas fa-shopping-bag"></i> Add to cart
+                        </button>
+                    </div>
+                </div>
+            `;
+            index++;
+        });
+
+        // إضافة المنتجات للصفحة
+        productsContainer.innerHTML = htmlString;
+
+        // تفعيل أزرار "أضف إلى السلة" للمنتجات الجديدة
+        const addBtns = productsContainer.querySelectorAll('.firecart-btn');
+        addBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.addToCart({
+                    id: btn.getAttribute('data-id'),
+                    name: btn.getAttribute('data-name'),
+                    price: parseFloat(btn.getAttribute('data-price')),
+                    img: btn.getAttribute('data-img')
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error("خطأ في جلب المنتجات:", error);
+    }
+}
+
+loadProducts();

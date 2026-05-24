@@ -8,18 +8,30 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- GLOBAL STYLES (header, cart modal, footer, shared variables) -->
+  <!-- GLOBAL STYLES -->
   <link rel="stylesheet" href="global.css">
   
-  <!-- PAGE-SPECIFIC STYLES (only for this Checkout page) -->
+  <!-- PAGE-SPECIFIC STYLES -->
   <style>
-    /* Checkout two‑column grid */
+    /* الحل السحري لمشكلة الـ Footer */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+    }
+    main {
+      flex: 1; /* هذا السطر بيجبر المحتوى يتمدد ويدفش الفوتر لتحت */
+    }
+
+    /* Checkout two-column grid */
     .checkout-grid {
       display: grid;
       grid-template-columns: 1fr 1.2fr;
       gap: 3rem;
       margin: 3rem 0;
     }
+    
     /* Order Summary */
     .order-summary {
       background: var(--off-white, #FFFEF9);
@@ -27,6 +39,7 @@
       padding: 1.8rem;
       border: 1px solid #F0E3D2;
       box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
+      height: fit-content; /* عشان ما يتمطط مع الفورم */
     }
     .order-summary h2 {
       font-size: 1.8rem;
@@ -52,6 +65,7 @@
       border-top: 2px solid var(--gold, #C6A43F);
       padding-top: 1rem;
     }
+    
     /* Customer Form */
     .checkout-form {
       background: var(--off-white, #FFFEF9);
@@ -98,6 +112,10 @@
       background: var(--deep-sage, #5E7A52);
       color: white;
     }
+    .confirm-order-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
     .back-link {
       display: inline-block;
       margin-top: 1rem;
@@ -120,15 +138,13 @@
 </head>
 <body>
 
-<!-- ========== PASTE GLOBAL HEADER & CART ICON HERE ========== -->
-<!-- Header snippet from shared-html.html goes here (includes .logo, .nav-links, #cartIconBtn, #cartCountBadge) -->
 <header>
   <div class="container">
     <div class="navbar">
-      <a href="Zarina.html" class="loogo"><div class="logo">ZARINA</div></a>
+      <a href="index.html" class="loogo"><div class="logo">ZARINA</div></a>
       <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
       <div class="nav-links">
-        <a href="Zarina.html">Home</a>
+        <a href="index.html">Home</a>
         <a href="Apothecary.html">Apothecary</a>
         <a href="CountactUS.html">Contact</a>
         <a href="OURstory.html">Our Story</a>
@@ -141,10 +157,12 @@
     </div>
   </div>
 </header>
+
+<!-- الـ Main رح ياخذ مساحة الصفحة المتبقية ليدفش الفوتر -->
 <main>
   <div class="container">
     <div class="checkout-grid">
-      <!-- Left: Order Summary (dynamic from localStorage) -->
+      <!-- Left: Order Summary -->
       <div class="order-summary">
         <h2><i class="fas fa-receipt"></i> Your order</h2>
         <div id="orderItemsList">
@@ -166,22 +184,20 @@
           </div>
           <div class="form-group">
             <label for="phone">Phone number</label>
-            <input type="tel" id="phone" required placeholder="+1 234 567 890">
+            <input type="tel" id="phone" required placeholder="+962 79 000 0000">
           </div>
           <div class="form-group">
             <label for="address">Shipping address</label>
-            <textarea id="address" rows="2" required placeholder="Street, city, postal code"></textarea>
+            <textarea id="address" rows="2" required placeholder="City, Area, Street..."></textarea>
           </div>
-          <button type="submit" class="confirm-order-btn"><i class="fas fa-check-circle"></i> Confirm order</button>
+          <button type="submit" class="confirm-order-btn" id="submitBtn"><i class="fas fa-check-circle"></i> Confirm order</button>
         </form>
-        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to store</a>
+        <a href="Zarina.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to store</a>
       </div>
     </div>
   </div>
 </main>
 
-<!-- ========== PASTE GLOBAL CART SIDEBAR HERE ========== -->
-<!-- Cart modal (slide-out) from shared-html.html goes here (with #cartSidebar, #cartOverlay, etc.) -->
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-sidebar" id="cartSidebar">
   <div class="cart-header">
@@ -199,8 +215,7 @@
     <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
   </div>
 </div>
-<!-- ========== PASTE GLOBAL FOOTER HERE ========== -->
-<!-- Footer snippet from shared-html.html goes here -->
+
 <footer>
   <div class="footer-icons">
     <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -208,15 +223,20 @@
     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
   </div>
   <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
-  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2026 Zarina Apothecary · Ancient wisdom for modern skin</p>
 </footer>
-<!-- GLOBAL JAVASCRIPT (cart, mobile menu, localStorage sync) -->
-<script src="global.js"></script>
 
-<!-- PAGE-SPECIFIC JAVASCRIPT (order summary + form submission) -->
-<script>
-  // Read cart from localStorage and render order summary
+<!-- استدعاء ملفات الفايربيس الأساسية -->
+<script type="module" src="global.js"></script>
+
+<!-- PAGE-SPECIFIC JAVASCRIPT: معالجة الطلب وإرساله للفايربيس -->
+<script type="module">
+  import { app } from './firebase-config.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+  const db = getFirestore(app);
   let cart = [];
+  let orderTotalAmount = 0;
 
   function loadCartAndRender() {
     const saved = localStorage.getItem('zarinaCart');
@@ -236,30 +256,33 @@
     if (!container) return;
 
     if (!cart || cart.length === 0) {
-      container.innerHTML = '<p>Your cart is empty. <a href="index.html" style="color: var(--gold);">Continue shopping</a></p>';
+      container.innerHTML = '<p style="color: #7B6E58;">Your cart is empty. <a href="Zarina.html" style="color: var(--gold); text-decoration: underline;">Continue shopping</a></p>';
       if (totalSpan) totalSpan.innerText = '$0.00';
+      const btn = document.getElementById('submitBtn');
+      if(btn) btn.disabled = true; // تعطيل زر الطلب إذا السلة فارغة
       return;
     }
 
     let itemsHtml = '';
-    let total = 0;
+    orderTotalAmount = 0;
+    
     cart.forEach(item => {
       const itemTotal = item.price * item.quantity;
-      total += itemTotal;
+      orderTotalAmount += itemTotal;
       itemsHtml += `
         <div class="summary-item">
           <div class="summary-details">
-            <strong>${escapeHtml(item.name)}</strong> x ${item.quantity}
+            <strong>${escapeHtml(item.name)}</strong> <span style="color: #7B6E58;">x ${item.quantity}</span>
           </div>
-          <div>$${itemTotal.toFixed(2)}</div>
+          <div style="font-weight: 600;">$${itemTotal.toFixed(2)}</div>
         </div>
       `;
     });
+    
     container.innerHTML = itemsHtml;
-    if (totalSpan) totalSpan.innerText = `$${total.toFixed(2)}`;
+    if (totalSpan) totalSpan.innerText = `$${orderTotalAmount.toFixed(2)}`;
   }
 
-  // Simple escape to prevent XSS (though product names are safe)
   function escapeHtml(str) {
     return str.replace(/[&<>]/g, function(m) {
       if (m === '&') return '&amp;';
@@ -269,33 +292,57 @@
     });
   }
 
-  // Handle order confirmation
+  // إرسال الطلب للفايربيس
   const form = document.getElementById('checkoutForm');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       if (cart.length === 0) {
         alert('Your cart is empty. Please add some items before checkout.');
         return;
       }
+      
       const name = document.getElementById('fullName').value.trim();
-      if (!name) {
-        alert('Please enter your full name.');
-        return;
-      }
-      // Success message
-      alert(`✨ Thank you, ${name}! ✨\nYour order has been received.\nA Zarina alchemist will prepare your remedies with gold & gratitude.`);
+      const phone = document.getElementById('phone').value.trim();
+      const address = document.getElementById('address').value.trim();
+      const submitBtn = document.getElementById('submitBtn');
 
-      // Clear cart from localStorage
-      localStorage.removeItem('zarinaCart');
-      // Redirect to homepage after 2 seconds
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 2000);
+      // تغيير شكل الزر لـ جاري التحميل
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      submitBtn.disabled = true;
+
+      try {
+        // تجهيز بيانات الطلب ورفعها للفايربيس بقسم orders
+        await addDoc(collection(db, "orders"), {
+          customerName: name,
+          customerPhone: phone,
+          customerAddress: address,
+          items: cart, // المنتجات اللي اشتراها
+          totalAmount: orderTotalAmount, // المجموع الكلي
+          status: "Pending", // حالة الطلب (قيد الانتظار)
+          createdAt: serverTimestamp() // وقت الطلب الحقيقي
+        });
+
+        alert(`✨ Thank you, ${name}! ✨\nYour order has been received successfully.\nA Zarina alchemist will prepare your remedies soon.`);
+
+        // مسح السلة من المتصفح بعد نجاح الطلب
+        localStorage.removeItem('zarinaCart');
+        
+        // إعادة توجيه للصفحة الرئيسية
+        window.location.href = 'Zindex.html';
+
+      } catch (error) {
+        console.error("Error adding order: ", error);
+        alert("Failed to send order. Please check your internet connection and try again.");
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
     });
   }
 
-  // Initialize page
+  // تشغيل الصفحة
   loadCartAndRender();
 </script>
 </body>
