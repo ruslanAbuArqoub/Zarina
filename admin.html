@@ -37,7 +37,31 @@
       gap: 10px;
     }
 
-    /* التعديل هون: تصميم زر تسجيل الخروج */
+    /* ===== شريط التنقل العلوي (Navigation) ===== */
+    .admin-nav {
+      display: flex;
+      gap: 20px;
+    }
+
+    .admin-nav a {
+      text-decoration: none;
+      color: #4A463E;
+      font-weight: 600;
+      padding: 8px 15px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .admin-nav a.active, .admin-nav a:hover {
+      background: var(--gold, #C6A43F);
+      color: white;
+      box-shadow: 0 4px 10px rgba(198, 164, 63, 0.2);
+    }
+
+    /* تصميم زر تسجيل الخروج */
     .user-info {
       display: flex;
       align-items: center;
@@ -211,7 +235,7 @@
       object-fit: cover;
     }
 
-    /* ===== أزرار التحكم (إخفاء / حذف) ===== */
+    /* ===== أزرار التحكم (إخفاء / تعديل / حذف) ===== */
     .action-btns {
       display: flex;
       gap: 10px;
@@ -227,6 +251,7 @@
     }
     .btn-toggle { color: var(--sage, #7B9C6E); }
     .btn-toggle.hidden { color: #A09E98; }
+    .btn-edit { color: #4A90E2; }
     .btn-delete { color: #C94C4C; }
     
     .btn-icon:hover {
@@ -272,8 +297,14 @@
       <i class="fas fa-leaf"></i>
       ZARINA Admin
     </div>
+    
+    <nav class="admin-nav">
+      <a href="admin.html" class="active"><i class="fas fa-box"></i> المنتجات</a>
+      <a href="admin-orders.html"><i class="fas fa-shopping-cart"></i> الطلبات</a>
+    </nav>
+
     <div class="user-info">
-      <span>مرحباً، يا هندسة 👋</span>
+      <span>مرحباً 👋</span>
       <button id="btnLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
     </div>
   </header>
@@ -292,7 +323,7 @@
         <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
         <div class="stat-info">
           <h4>إجمالي الأرباح</h4>
-          <div class="number" id="adminTotalEarnings">$0.00</div>
+          <div class="number" id="adminTotalEarnings">0.00 JD</div>
         </div>
       </div>
       <div class="stat-card">
@@ -341,8 +372,13 @@
             <input type="text" id="prodDescEn" class="form-control" placeholder="RAW INGREDIENTS" required>
           </div>
           <div class="form-group">
-            <label>السعر ($) - price</label>
+            <label>السعر الأساسي / الحالي (JD) - price</label>
             <input type="number" step="0.01" id="prodPrice" class="form-control" placeholder="3.75" required>
+          </div>
+          <div class="form-group">
+            <label>السعر قبل الخصم (JD) - oldPrice (اختياري)</label>
+            <input type="number" step="0.01" id="prodOldPrice" class="form-control" placeholder="5.00">
+            <small style="color: #666; font-size: 0.8rem;">اتركه فارغاً إذا لم يكن هناك خصم</small>
           </div>
           <div class="form-group">
             <label>رابط الصورة (URL) - imageUrl</label>
@@ -370,26 +406,68 @@
               </tr>
             </thead>
             <tbody id="adminProductsTable">
-              <tr>
-                <td><img src="https://placehold.co/60x60?text=Shea" class="prod-img-mini"></td>
-                <td><strong>زبدة الشيا الخام</strong><br><small style="color:#666;">Raw Shea Butter</small></td>
-                <td style="color: var(--gold); font-weight: bold;">$3.75</td>
-                <td>
-                  <label class="switch">
-                    <input type="checkbox" checked>
-                    <span class="slider"></span>
-                  </label>
-                </td>
-                <td>
-                  <button class="btn-icon btn-delete" title="حذف المنتج"><i class="fas fa-trash-alt"></i></button>
-                </td>
-              </tr>
               </tbody>
           </table>
         </div>
       </div>
 
+    </div> <div class="panel" style="margin-top: 2rem;">
+        <h2><i class="fas fa-ticket-alt"></i> إدارة كوبونات الخصم</h2>
+        
+        <form id="addCouponForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem; background: #FCF8F0; padding: 1.5rem; border-radius: 12px; border: 1px solid #D9CBB5;">
+            <div class="form-group">
+                <label>كود الخصم (مثال: ZARINA10) *</label>
+                <input type="text" id="couponCode" class="form-control" placeholder="ZARINA10" required style="text-transform: uppercase;">
+            </div>
+            
+            <div class="form-group">
+                <label>نوع الخصم *</label>
+                <select id="couponType" class="form-control" required>
+                    <option value="percentage">نسبة مئوية (%)</option>
+                    <option value="fixed">مبلغ ثابت (JD)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>قيمة الخصم *</label>
+                <input type="number" step="0.01" id="couponValue" class="form-control" placeholder="10" required>
+            </div>
+            
+            <div class="form-group">
+                <label>تاريخ الانتهاء *</label>
+                <input type="date" id="couponExpiry" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label>حد الاستخدام (كم مرة؟) *</label>
+                <input type="number" id="couponLimit" class="form-control" placeholder="مثال: 50" required>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn-submit" style="margin-top: 0;">
+                    إضافة الكوبون
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الكود</th>
+                        <th>النوع والقيمة</th>
+                        <th>الاستخدام</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>الحالة</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="adminCouponsTable">
+                    </tbody>
+            </table>
+        </div>
     </div>
+
   </div>
 
   <script type="module" src="admin.js"></script>

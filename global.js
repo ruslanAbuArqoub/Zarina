@@ -70,7 +70,7 @@
             <span class="ar-text">سلتك فاضية، اختار اللي بيعجبك وضيفه!</span>
           </div>`;
         const totalSpan = document.getElementById('cartTotalPrice');
-        if (totalSpan) totalSpan.innerText = '$0.00';
+        if (totalSpan) totalSpan.innerText = '0.00 JD';
         return;
       }
 
@@ -93,7 +93,7 @@
                 <span class="en-text">${escapeHtml(nameEn)}</span>
                 <span class="ar-text">${escapeHtml(nameAr)}</span>
               </div>
-              <div class="cart-item-price">$${item.price}</div>
+              <div class="cart-item-price">${item.price} JD</div>
               <div class="cart-qty">
                 <button class="qty-btn" data-id="${item.id}" data-delta="-1">-</button>
                 <span>${item.quantity}</span>
@@ -109,7 +109,7 @@
       });
       container.innerHTML = itemsHtml;
       const totalSpan = document.getElementById('cartTotalPrice');
-      if (totalSpan) totalSpan.innerText = `$${total.toFixed(2)}`;
+      if (totalSpan) totalSpan.innerText = `${total.toFixed(2)} JD`;
 
       document.querySelectorAll('.qty-btn').forEach(btn => {
         btn.addEventListener('click', handleQtyClick);
@@ -302,10 +302,8 @@ async function loadProducts() {
         querySnapshot.forEach((docSnap) => {
             const product = docSnap.data();
             
-            // 🔥 هاد هو السطر السحري: إذا المنتج مخفي، تجاوزه وكمل للبعده
             if (product.isVisible === false) return; 
             
-            // قراءة القيم باللغتين مع وجود قيمة احتياطية لو لسه مش معدلين بالفايربيس
             const nameEn = product.nameEn || product.name || 'Unnamed';
             const nameAr = product.nameAr || product.name || 'بدون اسم';
             const descEn = product.descEn || product.description || '';
@@ -313,11 +311,9 @@ async function loadProducts() {
             const catEn = product.categoryEn || product.category || 'RAW INGREDIENTS';
             const catAr = product.categoryAr || product.category || 'مكونات خام';
             
-            // تجهيز التاجات من الفايربيس (skin, hair, relaxation)
             const tagsArray = product.tags || []; 
-            const tagsString = tagsArray.join(' ').toLowerCase(); // عشان نربطها بـ data-tags للفلتر
+            const tagsString = tagsArray.join(' ').toLowerCase(); 
             
-            // بناء كود الـ HTML للتاجات الصغيرة (الفقاعات)
             let tagsHtml = '';
             if (tagsArray.length > 0) {
                 tagsHtml = '<div class="product-tags">';
@@ -333,9 +329,33 @@ async function loadProducts() {
                 tagsHtml += '</div>';
             }
 
-            // ضفنا الـ data-tags جوا الديف الرئيسي للكرت
+            // --- معالجة عرض السعر والخصم ---
+            let priceHtml = '';
+            let saleBadgeHtml = ''; // شريط الخصم على الصورة
+            
+            if (product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.price)) {
+                // إذا كان فيه خصم، اعرض السعر القديم مشطوب وجنبه السعر الجديد
+                priceHtml = `
+                    <div class="price" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--forest-green, #2F5D3A); font-weight: bold;">${product.price} JD</span>
+                        <del style="color: #A09E98; font-size: 0.9rem;">${product.oldPrice} JD</del>
+                    </div>
+                `;
+                // إضافة شريط "Sale" أو "تخفيض" فوق صورة المنتج
+                saleBadgeHtml = `
+                    <div style="position: absolute; top: 10px; right: 10px; background: #C6A43F; color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; font-weight: bold; z-index: 2;">
+                        <span class="en-text">SALE</span>
+                        <span class="ar-text">تخفيض</span>
+                    </div>
+                `;
+            } else {
+                // إذا مافي خصم، اعرض السعر العادي
+                priceHtml = `<div class="price">${product.price} JD</div>`;
+            }
+
             htmlString += `
-                <div class="product-card" data-tags="${tagsString}" style="animation-delay: ${index * 0.05}s">
+                <div class="product-card" data-tags="${tagsString}" style="animation-delay: ${index * 0.05}s; position: relative;">
+                    ${saleBadgeHtml}
                     <img class="product-img" src="${product.imageUrl}" alt="product img" loading="lazy">
                     <div class="product-info">
                         
@@ -356,7 +376,7 @@ async function loadProducts() {
                             <span class="ar-text">${descAr}</span>
                         </div>
                         
-                        <div class="price">$${product.price}</div>
+                        ${priceHtml}
                         
                         <button class="add-to-cart firecart-btn" data-id="${docSnap.id}" data-name-en="${nameEn}" data-name-ar="${nameAr}" data-price="${product.price}" data-img="${product.imageUrl}">
                             <i class="fas fa-shopping-bag"></i> 
@@ -375,7 +395,6 @@ async function loadProducts() {
         addBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                // نمرر الاسمين لدالة السلة عشان تتذكرهم وتترجمهم
                 window.addToCart({
                     id: btn.getAttribute('data-id'),
                     nameEn: btn.getAttribute('data-name-en'),
