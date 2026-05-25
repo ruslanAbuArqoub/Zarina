@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -241,12 +241,35 @@
     <div class="navbar">
       <a href="index.html" class="loogo"><div class="logo">ZARINA</div></a>
       <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      
       <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="Apothecary.html">Apothecary</a>
-        <a href="CountactUS.html">Contact</a>
-        <a href="OURstory.html">Our Story</a>
-        <a href="About.html">About</a>
+        <a href="index.html">
+          <span class="en-text">Home</span>
+          <span class="ar-text">الرئيسية</span>
+        </a>
+        <a href="Apothecary.html">
+          <span class="en-text">Apothecary</span>
+          <span class="ar-text">منتجاتنا</span>
+        </a>
+        <a href="CountactUS.html">
+          <span class="en-text">Contact</span>
+          <span class="ar-text">تواصل معنا</span>
+        </a>
+        <a href="OURstory.html">
+          <span class="en-text">Our Story</span>
+          <span class="ar-text">حكايتنا</span>
+        </a>
+        <a href="About.html">
+          <span class="en-text">About</span>
+          <span class="ar-text">عن زارينا</span>
+        </a>
+
+        <div class="lang-switch" id="langToggle">
+          <span class="bg-text-en">e</span>
+          <span class="bg-text-ar">ع</span>
+          <div class="circle"></div>
+        </div>
+
         <button class="cart-icon" id="cartIconBtn">
           <i class="fas fa-shopping-bag"></i>
           <span id="cartCountBadge" class="cart-count">0</span>
@@ -264,42 +287,82 @@
           <img src="https://placehold.co/600x500?text=Zarina+Apothecary+Heritage&font=playfair&bg=FCF3E2&textColor=8B6946" alt="Zarina herbal apothecary">
         </div>
         <div class="story-text reveal">
-          <h2>The ZARINA Journey:<br>A Return to Nature</h2>
-          <p>Zarina was born out of a simple belief: nature provides the absolute best remedies. Frustrated by commercial skincare filled with harsh, synthetic chemicals, we turned to the earth. We began researching ancient apothecary recipes and the healing power of raw botanicals. What started as a personal passion for mixing pure oils and dried herbs soon blossomed into Zarina. Our mission is to bring you the finest, ethically sourced raw ingredients and handcrafted skincare. We honor the traditional art of the herbalist while meeting modern needs, because we believe in transparency, purity, and the natural glow that comes from within.</p>
+          <h2>
+            <span class="en-text">The ZARINA Journey:<br>A Return to Nature</span>
+            <span class="ar-text">رحلة زارينا:<br>رجوع لقلب الطبيعة</span>
+          </h2>
+          <p>
+            <span class="en-text">Zarina was born out of a simple belief: nature provides the absolute best remedies. Frustrated by commercial skincare filled with harsh, synthetic chemicals, we turned to the earth. We began researching ancient apothecary recipes and the healing power of raw botanicals. What started as a personal passion for mixing pure oils and dried herbs soon blossomed into Zarina. Our mission is to bring you the finest, ethically sourced raw ingredients and handcrafted skincare. We honor the traditional art of the herbalist while meeting modern needs, because we believe in transparency, purity, and the natural glow that comes from within.</span>
+            <span class="ar-text">زارينا بلشت من إيمان بسيط: الطبيعة فيها أحسن علاج. بعد ما تعبنا من منتجات السوق المليانة مواد كيماوية، قررنا نرجع للأرض. بلشنا نبحث بوصفات الأجداد والقوة العلاجية للأعشاب. الإشي اللي بلش كشغف شخصي بخلط الزيوت الصافية والأعشاب، كبر وصار "زارينا". مهمتنا نقدملك أنقى المكونات الطبيعية والمصنوعة بحُب. إحنا بنحترم حكمة الأجداد وبنلبي احتياجاتك اليوم، لأننا بنآمن بالشفافية، النقاء، والنضارة اللي بتطلع من جواكي.</span>
+          </p>
         </div>
       </div>
     </div>
 
     <div class="values-section">
-      <h2 class="section-title reveal">🌿 Our philosophy</h2>
+      <h2 class="section-title reveal">
+        <span class="en-text">🌿 Our philosophy</span>
+        <span class="ar-text">🌿 فلسفتنا</span>
+      </h2>
       <div class="values-grid">
         <div class="value-card reveal">
           <i class="fas fa-seedling"></i>
-          <h3>100% Pure & Raw</h3>
-          <p>No synthetic additives, no artificial fragrances. Just the untouched power of plants.</p>
+          <h3>
+            <span class="en-text">100% Pure & Raw</span>
+            <span class="ar-text">طبيعي وخام 100%</span>
+          </h3>
+          <p>
+            <span class="en-text">No synthetic additives, no artificial fragrances. Just the untouched power of plants.</span>
+            <span class="ar-text">بدون إضافات كيماوية أو عطور صناعية. بس قوة النباتات الصافية.</span>
+          </p>
         </div>
         <div class="value-card reveal">
           <i class="fas fa-hand-holding-heart"></i>
-          <h3>Cruelty-Free</h3>
-          <p>Never tested on animals. Ethically sourced from wildcrafters who respect nature.</p>
+          <h3>
+            <span class="en-text">Cruelty-Free</span>
+            <span class="ar-text">صديق للحيوانات</span>
+          </h3>
+          <p>
+            <span class="en-text">Never tested on animals. Ethically sourced from wildcrafters who respect nature.</span>
+            <span class="ar-text">منتجاتنا ما بتتجرب على الحيوانات، ومصادرنا من ناس بتحترم الطبيعة وبتخاف عليها.</span>
+          </p>
         </div>
         <div class="value-card reveal">
           <i class="fas fa-mortar-pestle"></i>
-          <h3>Handcrafted with Love</h3>
-          <p>Every oil, salve, and powder is blended in small batches with intention and care.</p>
+          <h3>
+            <span class="en-text">Handcrafted with Love</span>
+            <span class="ar-text">مصنوعة بحُب</span>
+          </h3>
+          <p>
+            <span class="en-text">Every oil, salve, and powder is blended in small batches with intention and care.</span>
+            <span class="ar-text">كل زيت، مرهم، وباودر بنخلطه بكميات صغيرة عشان نعطيه كل الاهتمام والحُب.</span>
+          </p>
         </div>
       </div>
     </div>
 
     <div class="featured-products">
-      <h2 class="section-title reveal">✨ Apothecary essentials</h2>
+      <h2 class="section-title reveal">
+        <span class="en-text">✨ Apothecary essentials</span>
+        <span class="ar-text">✨ أساسيات عنايتك</span>
+      </h2>
+      <!-- هون رح تنزل منتجات الفايربيس تلقائياً -->
       <div class="featured-grid" id="products-container"></div>
     </div>
 
     <div class="cta-banner reveal">
-      <h3>Discover the ritual</h3>
-      <p>Embrace the wisdom of raw ingredients and handcrafted elixirs.</p>
-      <a href="#" class="cta-btn">Explore The Apothecary <i class="fas fa-arrow-right"></i></a>
+      <h3>
+        <span class="en-text">Discover the ritual</span>
+        <span class="ar-text">اكتشفي روتينك الجديد</span>
+      </h3>
+      <p>
+        <span class="en-text">Embrace the wisdom of raw ingredients and handcrafted elixirs.</span>
+        <span class="ar-text">عيشي التجربة مع مكوناتنا الطبيعية وخلطاتنا المصنوعة بحُب.</span>
+      </p>
+      <a href="Apothecary.html" class="cta-btn">
+        <span class="en-text">Explore The Apothecary <i class="fas fa-arrow-right"></i></span>
+        <span class="ar-text">تصفحي منتجاتنا <i class="fas fa-arrow-left"></i></span>
+      </a>
     </div>
   </div>
 </main>
@@ -307,18 +370,31 @@
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-sidebar" id="cartSidebar">
   <div class="cart-header">
-    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <h3>
+      <i class="fas fa-mortar-pestle"></i> 
+      <span class="en-text">Your remedies</span>
+      <span class="ar-text">منتجاتك الطبيعية</span>
+    </h3>
     <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
   </div>
+  
   <div class="cart-items" id="cartItemsContainer">
-    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+    <div class="empty-cart-msg">
+      <span class="en-text">Your cart is empty, dear one.</span>
+      <span class="ar-text">سلتك فاضية، دلعي حالك وضيفي منتجات!</span>
+    </div>
   </div>
+  
   <div class="cart-footer">
     <div class="total">
-      <span>Total</span>
+      <span class="en-text">Total</span>
+      <span class="ar-text">المجموع</span>
       <span id="cartTotalPrice">$0.00</span>
     </div>
-    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+    <button class="checkout-action" id="proceedCheckoutBtn">
+      <span class="en-text"><i class="fas fa-feather-alt"></i> Proceed to Checkout</span>
+      <span class="ar-text"><i class="fas fa-feather-alt"></i> كمّلي طلبك</span>
+    </button>
   </div>
 </div>
 
@@ -328,8 +404,15 @@
     <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
   </div>
-  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
-  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+  <p>
+    <span class="en-text">Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></span>
+    <span class="ar-text">زارينا — طبيعة خام، عناية من القلب. <i class="fas fa-leaf"></i></span>
+  </p>
+  <p style="margin-top: 8px; font-size:0.75rem;">
+    &copy; 2026 Zarina Apothecary · 
+    <span class="en-text">Ancient wisdom for modern skin</span>
+    <span class="ar-text">حكمة الأجداد لجمالك اليوم</span>
+  </p>
 </footer>
 
 <script>
@@ -347,7 +430,6 @@
 </script>
 
 <script type="module" src="firebase-config.js"></script>
-
 <script type="module" src="global.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -187,24 +187,16 @@
       100% { opacity: 1; transform: translateY(0);}
     }
 
-    /* Responsive adjustments (only page-specific) */
+    /* Responsive adjustments */
     @media (max-width: 768px) {
-      .hero h1 {
-        font-size: 2.4rem;
-      }
-      .section-title {
-        font-size: 2rem;
-      }
-      .products-grid {
-        gap: 1.2rem;
-      }
+      .hero h1 { font-size: 2.4rem; }
+      .section-title { font-size: 2rem; }
+      .products-grid { gap: 1.2rem; }
     }
     @media (max-width: 480px) {
-      .hero {
-        padding: 3rem 1rem;
-      }
+      .hero { padding: 3rem 1rem; }
     }
-    /* تنسيق الفئة (الذهبي) */
+    
     .product-category {
       color: var(--gold);
       font-size: 0.75rem;
@@ -213,8 +205,6 @@
       margin-top: 0.2rem;
       margin-bottom: 0.8rem;
     }
-    
-    /* تنسيق التاجات (skin, hair) */
     .product-tags {
       display: flex;
       gap: 8px;
@@ -236,12 +226,35 @@
     <div class="navbar">
       <a href="index.html" class="loogo"><div class="logo">ZARINA</div></a>
       <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      
       <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="Apothecary.html">Apothecary</a>
-        <a href="CountactUS.html">Contact</a>
-        <a href="OURstory.html">Our Story</a>
-        <a href="About.html">About</a>
+        <a href="index.html">
+          <span class="en-text">Home</span>
+          <span class="ar-text">الرئيسية</span>
+        </a>
+        <a href="Apothecary.html">
+          <span class="en-text">Apothecary</span>
+          <span class="ar-text">منتجاتنا</span>
+        </a>
+        <a href="CountactUS.html">
+          <span class="en-text">Contact</span>
+          <span class="ar-text">تواصل معنا</span>
+        </a>
+        <a href="OURstory.html">
+          <span class="en-text">Our Story</span>
+          <span class="ar-text">حكايتنا</span>
+        </a>
+        <a href="About.html">
+          <span class="en-text">About</span>
+          <span class="ar-text">عن زارينا</span>
+        </a>
+
+        <div class="lang-switch" id="langToggle">
+          <span class="bg-text-en">e</span>
+          <span class="bg-text-ar">ع</span>
+          <div class="circle"></div>
+        </div>
+
         <button class="cart-icon" id="cartIconBtn">
           <i class="fas fa-shopping-bag"></i>
           <span id="cartCountBadge" class="cart-count">0</span>
@@ -254,14 +267,26 @@
 <main>
   <section class="hero">
     <div class="hero-content">
-      <h1>Zarina Raw Ingredients</h1>
-      <p>Ancient wisdom · Wildcrafted botanicals · Cold-pressed oils</p>
-      <button class="hero-btn" id="shopNowBtn">Explore collection <i class="fas fa-leaf"></i></button>
+      <h1>
+        <span class="en-text">Zarina Raw Ingredients</span>
+        <span class="ar-text">زارينا للمنتجات الطبيعية</span>
+      </h1>
+      <p>
+        <span class="en-text">Ancient wisdom · Wildcrafted botanicals · Cold-pressed oils</span>
+        <span class="ar-text">حكمة الأجداد · أعشاب بريّة · زيوت طبيعية عصرة أولى</span>
+      </p>
+      <button class="hero-btn" id="shopNowBtn">
+        <span class="en-text">Explore collection <i class="fas fa-leaf"></i></span>
+        <span class="ar-text">تصفحي مجموعتنا <i class="fas fa-leaf"></i></span>
+      </button>
     </div>
   </section>
 
   <div class="container products-section">
-    <h2 class="section-title">From earth, with intention</h2>
+    <h2 class="section-title">
+      <span class="en-text">From earth, with intention</span>
+      <span class="ar-text">من قلب الطبيعة، صُنعناهم بحُب</span>
+    </h2>
     <div id="products-container" class="products-grid"></div>
   </div>
 </main>
@@ -269,18 +294,31 @@
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-sidebar" id="cartSidebar">
   <div class="cart-header">
-    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <h3>
+      <i class="fas fa-mortar-pestle"></i> 
+      <span class="en-text">Your remedies</span>
+      <span class="ar-text">منتجاتك الطبيعية</span>
+    </h3>
     <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
   </div>
+  
   <div class="cart-items" id="cartItemsContainer">
-    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+    <div class="empty-cart-msg">
+      <span class="en-text">Your cart is empty, dear one.</span>
+      <span class="ar-text">سلتك فاضية، دلعي حالك وضيفي منتجات!</span>
+    </div>
   </div>
+  
   <div class="cart-footer">
     <div class="total">
-      <span>Total</span>
+      <span class="en-text">Total</span>
+      <span class="ar-text">المجموع</span>
       <span id="cartTotalPrice">$0.00</span>
     </div>
-    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+    <button class="checkout-action" id="proceedCheckoutBtn">
+      <span class="en-text"><i class="fas fa-feather-alt"></i> Proceed to Checkout</span>
+      <span class="ar-text"><i class="fas fa-feather-alt"></i> كمّلي طلبك</span>
+    </button>
   </div>
 </div>
 
@@ -290,65 +328,33 @@
     <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
   </div>
-  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
-  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2025 Zarina Apothecary · Ancient wisdom for modern skin</p>
+  <p>
+    <span class="en-text">Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></span>
+    <span class="ar-text">زارينا — طبيعة خام، عناية من القلب. <i class="fas fa-leaf"></i></span>
+  </p>
+  <p style="margin-top: 8px; font-size:0.75rem;">
+    &copy; 2026 Zarina Apothecary · 
+    <span class="en-text">Ancient wisdom for modern skin</span>
+    <span class="ar-text">حكمة الأجداد لجمالك اليوم</span>
+  </p>
 </footer>
 
 <script type="module" src="firebase-config.js"></script>
-
 <script type="module" src="global.js"></script>
 
 <script>
-  // ---------- PRODUCT DATA (only used on this page) ----------
-  const products = [
-    { id: 1, name: "Golden Rosehip Seed Oil", price: 24, desc: "Cold-pressed, regenerative & rich in vitamin C", img: "https://placehold.co/400x300?text=Rosehip+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
-    { id: 2, name: "Calendula & Chamomile Salve", price: 28, desc: "Soothing balm for sensitive & irritated skin", img: "https://placehold.co/400x300?text=Calendula+Salve&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
-    { id: 3, name: "Lavender Dream Oil", price: 19, desc: "100% organic lavender, calming & anti-inflammatory", img: "https://placehold.co/400x300?text=Lavender+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
-    { id: 4, name: "Herbal Glow Face Serum", price: 34, desc: "Squalane + adaptogens for dewy radiance", img: "https://placehold.co/400x300?text=Glow+Serum&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
-    { id: 5, name: "Healing Balm (Zarina Blend)", price: 32, desc: "Infused with comfrey, plantain & beeswax", img: "https://placehold.co/400x300?text=Healing+Balm&font=montserrat&bg=FDF7ED&textColor=2F5D3A" },
-    { id: 6, name: "Nourishing Body Oil", price: 27, desc: "Jojoba & sea buckthorn, silky hydration", img: "https://placehold.co/400x300?text=Body+Oil&font=montserrat&bg=FDF7ED&textColor=2F5D3A" }
-  ];
-
-  // DOM elements
-  const productsGrid = document.getElementById('products-container'); // تم تعديل الاسم هنا كمان
   const shopNowBtn = document.getElementById('shopNowBtn');
-
-  // Render product cards dynamically (تم إيقاف استدعائها بالأسفل عشان الفايربيس يشتغل)
-  function renderProducts() {
-    if (!productsGrid) return;
-    productsGrid.innerHTML = '';
-    products.forEach((prod, index) => {
-      const card = document.createElement('div');
-      card.classList.add('product-card');
-      card.style.animationDelay = `${index * 0.05}s`;
-      card.innerHTML = `
-        <img class="product-img" src="${prod.img}" alt="${prod.name}" loading="lazy">
-        <div class="product-info">
-          <div class="product-title">${prod.name}</div>
-          <div class="product-desc">${prod.desc}</div>
-          <div class="price">$${prod.price}</div>
-          <button class="add-to-cart" data-id="${prod.id}"><i class="fas fa-shopping-bag"></i> Add to cart</button>
-        </div>
-      `;
-      productsGrid.appendChild(card);
-    });
-  }
-
-  // Smooth scroll to products section
+  
   function scrollToProducts() {
     const productsSection = document.querySelector('.products-section');
     if (productsSection) {
       productsSection.scrollIntoView({ behavior: 'smooth' });
     }
   }
-
-  // Event listener for hero button
+  
   if (shopNowBtn) {
     shopNowBtn.addEventListener('click', scrollToProducts);
   }
-
-  // تم إيقاف هاي الدالة (المنتجات الوهمية) عشان يشتغل الفايربيس
-  // renderProducts(); 
 </script>
 </body>
 </html>

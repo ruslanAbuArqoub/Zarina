@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ZARINA · Checkout</title>
-  <!-- Font Awesome & Google Fonts (required for icons and typography) -->
+  <!-- Font Awesome & Google Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
   
@@ -13,7 +13,6 @@
   
   <!-- PAGE-SPECIFIC STYLES -->
   <style>
-    /* الحل السحري لمشكلة الـ Footer */
     body {
       display: flex;
       flex-direction: column;
@@ -21,7 +20,7 @@
       margin: 0;
     }
     main {
-      flex: 1; /* هذا السطر بيجبر المحتوى يتمدد ويدفش الفوتر لتحت */
+      flex: 1; 
     }
 
     /* Checkout two-column grid */
@@ -39,13 +38,19 @@
       padding: 1.8rem;
       border: 1px solid #F0E3D2;
       box-shadow: var(--shadow, 0 12px 28px -8px rgba(0,0,0,0.08));
-      height: fit-content; /* عشان ما يتمطط مع الفورم */
+      height: fit-content; 
     }
     .order-summary h2 {
       font-size: 1.8rem;
       margin-bottom: 1.2rem;
       border-left: 4px solid var(--gold, #C6A43F);
       padding-left: 1rem;
+    }
+    html[lang="ar"] .order-summary h2 {
+      border-left: none;
+      border-right: 4px solid var(--gold, #C6A43F);
+      padding-left: 0;
+      padding-right: 1rem;
     }
     .summary-item {
       display: flex;
@@ -72,6 +77,10 @@
       border-radius: 28px;
       padding: 1.8rem;
       border: 1px solid #F0E3D2;
+    }
+    .checkout-form h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
     }
     .form-group {
       margin-bottom: 1.2rem;
@@ -143,12 +152,35 @@
     <div class="navbar">
       <a href="index.html" class="loogo"><div class="logo">ZARINA</div></a>
       <button class="hamburger" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      
       <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="Apothecary.html">Apothecary</a>
-        <a href="CountactUS.html">Contact</a>
-        <a href="OURstory.html">Our Story</a>
-        <a href="About.html">About</a>
+        <a href="index.html">
+          <span class="en-text">Home</span>
+          <span class="ar-text">الرئيسية</span>
+        </a>
+        <a href="Apothecary.html">
+          <span class="en-text">Apothecary</span>
+          <span class="ar-text">منتجاتنا</span>
+        </a>
+        <a href="CountactUS.html">
+          <span class="en-text">Contact</span>
+          <span class="ar-text">تواصل معنا</span>
+        </a>
+        <a href="OURstory.html">
+          <span class="en-text">Our Story</span>
+          <span class="ar-text">حكايتنا</span>
+        </a>
+        <a href="About.html">
+          <span class="en-text">About</span>
+          <span class="ar-text">عن زارينا</span>
+        </a>
+
+        <div class="lang-switch" id="langToggle">
+          <span class="bg-text-en">e</span>
+          <span class="bg-text-ar">ع</span>
+          <div class="circle"></div>
+        </div>
+
         <button class="cart-icon" id="cartIconBtn">
           <i class="fas fa-shopping-bag"></i>
           <span id="cartCountBadge" class="cart-count">0</span>
@@ -158,61 +190,101 @@
   </div>
 </header>
 
-<!-- الـ Main رح ياخذ مساحة الصفحة المتبقية ليدفش الفوتر -->
 <main>
   <div class="container">
     <div class="checkout-grid">
       <!-- Left: Order Summary -->
       <div class="order-summary">
-        <h2><i class="fas fa-receipt"></i> Your order</h2>
+        <h2>
+          <i class="fas fa-receipt"></i> 
+          <span class="en-text">Your order</span>
+          <span class="ar-text">ملخص الطلب</span>
+        </h2>
         <div id="orderItemsList">
           <p>Loading cart...</p>
         </div>
         <div id="orderTotal" class="summary-total">
-          <span>Total</span>
+          <span>
+            <span class="en-text">Total</span>
+            <span class="ar-text">المجموع</span>
+          </span>
           <span>$0.00</span>
         </div>
       </div>
 
       <!-- Right: Customer Form -->
       <div class="checkout-form">
-        <h2><i class="fas fa-feather-alt"></i> Shipping details</h2>
+        <h2>
+          <i class="fas fa-feather-alt"></i> 
+          <span class="en-text">Shipping details</span>
+          <span class="ar-text">تفاصيل التوصيل</span>
+        </h2>
         <form id="checkoutForm">
           <div class="form-group">
-            <label for="fullName">Full name</label>
-            <input type="text" id="fullName" required placeholder="e.g., Zara Ahmed">
+            <label for="fullName">
+              <span class="en-text">Full name</span>
+              <span class="ar-text">الاسم الكامل</span>
+            </label>
+            <input type="text" id="fullName" required placeholder="e.g., Sara Ahmed | مثال: سارا أحمد">
           </div>
           <div class="form-group">
-            <label for="phone">Phone number</label>
+            <label for="phone">
+              <span class="en-text">Phone number</span>
+              <span class="ar-text">رقم الهاتف</span>
+            </label>
             <input type="tel" id="phone" required placeholder="+962 79 000 0000">
           </div>
           <div class="form-group">
-            <label for="address">Shipping address</label>
-            <textarea id="address" rows="2" required placeholder="City, Area, Street..."></textarea>
+            <label for="address">
+              <span class="en-text">Shipping address</span>
+              <span class="ar-text">عنوان التوصيل</span>
+            </label>
+            <textarea id="address" rows="2" required placeholder="City, Area, Street... | المدينة، المنطقة، الشارع..."></textarea>
           </div>
-          <button type="submit" class="confirm-order-btn" id="submitBtn"><i class="fas fa-check-circle"></i> Confirm order</button>
+          <button type="submit" class="confirm-order-btn" id="submitBtn">
+            <span class="en-text"><i class="fas fa-check-circle"></i> Confirm order</span>
+            <span class="ar-text"><i class="fas fa-check-circle"></i> تأكيد الطلب</span>
+          </button>
         </form>
-        <a href="Zarina.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to store</a>
+        <a href="index.html" class="back-link">
+          <i class="fas fa-arrow-left"></i> 
+          <span class="en-text">Back to store</span>
+          <span class="ar-text">الرجوع للمتجر</span>
+        </a>
       </div>
     </div>
   </div>
 </main>
 
+<!-- Cart modal -->
 <div class="cart-overlay" id="cartOverlay"></div>
 <div class="cart-sidebar" id="cartSidebar">
   <div class="cart-header">
-    <h3><i class="fas fa-mortar-pestle"></i> Your remedies</h3>
+    <h3>
+      <i class="fas fa-mortar-pestle"></i> 
+      <span class="en-text">Your remedies</span>
+      <span class="ar-text">منتجاتك الطبيعية</span>
+    </h3>
     <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
   </div>
+  
   <div class="cart-items" id="cartItemsContainer">
-    <div class="empty-cart-msg">Your cart is empty, dear one.</div>
+    <div class="empty-cart-msg">
+      <span class="en-text">Your cart is empty, dear one.</span>
+      <span class="ar-text">سلتك فاضية، ضيف منتجات!</span>
+    </div>
   </div>
+  
   <div class="cart-footer">
     <div class="total">
-      <span>Total</span>
+      <span class="en-text">Total</span>
+      <span class="ar-text">المجموع</span>
       <span id="cartTotalPrice">$0.00</span>
     </div>
-    <button class="checkout-action" id="proceedCheckoutBtn"><i class="fas fa-feather-alt"></i> Proceed to Checkout</button>
+    <button class="checkout-action" id="proceedCheckoutBtn">
+      <span class="en-text"><i class="fas fa-feather-alt"></i> Proceed to Checkout</span>
+      <span class="ar-text"><i class="fas fa-feather-alt"></i> كمل طلبك</span>
+    </button>
   </div>
 </div>
 
@@ -222,8 +294,15 @@
     <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
   </div>
-  <p>Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></p>
-  <p style="margin-top: 8px; font-size:0.75rem;">&copy; 2026 Zarina Apothecary · Ancient wisdom for modern skin</p>
+  <p>
+    <span class="en-text">Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></span>
+    <span class="ar-text">زارينا — طبيعة خام، عناية من القلب. <i class="fas fa-leaf"></i></span>
+  </p>
+  <p style="margin-top: 8px; font-size:0.75rem;">
+    &copy; 2026 Zarina Apothecary · 
+    <span class="en-text">Ancient wisdom for modern skin</span>
+    <span class="ar-text">حكمة الأجداد لجمالك اليوم</span>
+  </p>
 </footer>
 
 <!-- استدعاء ملفات الفايربيس الأساسية -->
@@ -256,10 +335,19 @@
     if (!container) return;
 
     if (!cart || cart.length === 0) {
-      container.innerHTML = '<p style="color: #7B6E58;">Your cart is empty. <a href="Zarina.html" style="color: var(--gold); text-decoration: underline;">Continue shopping</a></p>';
+      container.innerHTML = `
+        <p style="color: #7B6E58;">
+          <span class="en-text">Your cart is empty. </span>
+          <span class="ar-text">سلتك فاضية. </span>
+          <a href="index.html" style="color: var(--gold); text-decoration: underline;">
+            <span class="en-text">Continue shopping</span>
+            <span class="ar-text">كمل تسوق</span>
+          </a>
+        </p>
+      `;
       if (totalSpan) totalSpan.innerText = '$0.00';
       const btn = document.getElementById('submitBtn');
-      if(btn) btn.disabled = true; // تعطيل زر الطلب إذا السلة فارغة
+      if(btn) btn.disabled = true;
       return;
     }
 
@@ -269,10 +357,19 @@
     cart.forEach(item => {
       const itemTotal = item.price * item.quantity;
       orderTotalAmount += itemTotal;
+      
+      // تجهيز أسماء المنتجات باللغتين
+      const nameEn = item.nameEn || item.name || 'Unnamed';
+      const nameAr = item.nameAr || item.name || 'بدون اسم';
+
       itemsHtml += `
         <div class="summary-item">
           <div class="summary-details">
-            <strong>${escapeHtml(item.name)}</strong> <span style="color: #7B6E58;">x ${item.quantity}</span>
+            <strong>
+              <span class="en-text">${escapeHtml(nameEn)}</span>
+              <span class="ar-text">${escapeHtml(nameAr)}</span>
+            </strong> 
+            <span style="color: #7B6E58; margin: 0 4px;">x ${item.quantity}</span>
           </div>
           <div style="font-weight: 600;">$${itemTotal.toFixed(2)}</div>
         </div>
@@ -284,6 +381,7 @@
   }
 
   function escapeHtml(str) {
+    if (!str) return '';
     return str.replace(/[&<>]/g, function(m) {
       if (m === '&') return '&amp;';
       if (m === '<') return '&lt;';
@@ -299,7 +397,7 @@
       e.preventDefault();
       
       if (cart.length === 0) {
-        alert('Your cart is empty. Please add some items before checkout.');
+        alert('Your cart is empty. Please add some items before checkout.\nسلتك فاضية، ضيف منتجات قبل ما تكمل طلبك.');
         return;
       }
       
@@ -310,39 +408,34 @@
 
       // تغيير شكل الزر لـ جاري التحميل
       const originalText = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="en-text">Processing...</span><span class="ar-text">جاري المعالجة...</span>';
       submitBtn.disabled = true;
 
       try {
-        // تجهيز بيانات الطلب ورفعها للفايربيس بقسم orders
         await addDoc(collection(db, "orders"), {
           customerName: name,
           customerPhone: phone,
           customerAddress: address,
-          items: cart, // المنتجات اللي اشتراها
-          totalAmount: orderTotalAmount, // المجموع الكلي
-          status: "Pending", // حالة الطلب (قيد الانتظار)
-          createdAt: serverTimestamp() // وقت الطلب الحقيقي
+          items: cart, 
+          totalAmount: orderTotalAmount, 
+          status: "Pending", 
+          createdAt: serverTimestamp() 
         });
 
-        alert(`✨ Thank you, ${name}! ✨\nYour order has been received successfully.\nA Zarina alchemist will prepare your remedies soon.`);
+        alert(`✨ Thank you, ${name}! ✨\nYour order has been received successfully.\n\n✨ شكراً ${name}! ✨\nوصلنا طلبك بنجاح ورح نجهزه بأقرب وقت.`);
 
-        // مسح السلة من المتصفح بعد نجاح الطلب
         localStorage.removeItem('zarinaCart');
-        
-        // إعادة توجيه للصفحة الرئيسية
-        window.location.href = 'Zindex.html';
+        window.location.href = 'Zindex.html'; // التوجيه للصفحة الاكثر مبيعا
 
       } catch (error) {
         console.error("Error adding order: ", error);
-        alert("Failed to send order. Please check your internet connection and try again.");
+        alert("Failed to send order. Please check your internet connection and try again.\nفشل إرسال الطلب. تأكد من اتصالك بالإنترنت وجرب مرة ثانية.");
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
       }
     });
   }
 
-  // تشغيل الصفحة
   loadCartAndRender();
 </script>
 </body>
