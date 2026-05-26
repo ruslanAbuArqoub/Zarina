@@ -238,7 +238,7 @@ body > header:not(.admin-header) {
 }
 
 .logo::before {
-  background: url("assets/zarina-logo-mark.png") center / contain no-repeat;
+  background: url("zarina-logo-mark.png") center / contain no-repeat;
   content: "";
   display: inline-block;
   flex: 0 0 auto;
