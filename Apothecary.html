@@ -337,6 +337,10 @@
           <span class="en-text">Apothecary</span>
           <span class="ar-text">منتجاتنا</span>
         </a>
+        <a href="Collections.html">
+          <span class="en-text">Collections</span>
+          <span class="ar-text">المجموعات</span>
+        </a>
         <a href="CountactUS.html">
           <span class="en-text">Contact</span>
           <span class="ar-text">تواصل معنا</span>
@@ -416,20 +420,53 @@
         <span class="ar-text">✦ مجموعاتنا المميزة</span>
       </h2>
       <p style="color: #7B6E58;">
-          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="oils">
+          <a href="#" class="catalog-filter-btn" style="border:none; padding:0; background:transparent;" data-filter="oils">
             <span class="en-text">Oils</span><span class="ar-text">زيوت</span>
           </a> · 
-          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="ingredients">
+          <a href="#" class="catalog-filter-btn" style="border:none; padding:0; background:transparent;" data-filter="ingredients">
             <span class="en-text">Raw ingredients</span><span class="ar-text">مكونات خام</span>
           </a> · 
-          <a href="#" class="filter-btn" style="border:none; padding:0;" data-filter="botanicals">
+          <a href="#" class="catalog-filter-btn" style="border:none; padding:0; background:transparent;" data-filter="botanicals">
             <span class="en-text">Botanicals</span><span class="ar-text">أعشاب</span>
           </a>
       </p>
     </div>
     
+    <section class="catalog-tools" aria-label="Product search and filters">
+      <div class="catalog-search-row">
+        <div class="catalog-search-box">
+          <i class="fas fa-search"></i>
+          <input type="search" id="catalogSearchInput" class="catalog-search-input" placeholder="Search oils, herbs, skin care... | ابحث عن زيت، عشبة، عناية...">
+        </div>
+        <select id="catalogSortSelect" class="catalog-sort-select" aria-label="Sort products">
+          <option value="featured">Featured | المميزة</option>
+          <option value="price-asc">Price: low to high | السعر الأقل</option>
+          <option value="price-desc">Price: high to low | السعر الأعلى</option>
+          <option value="name-asc">Name A-Z | الاسم</option>
+        </select>
+      </div>
+      <div class="catalog-filter-row" id="catalogFilterRow">
+        <button type="button" class="catalog-filter-btn active" data-filter="all">
+          <span class="en-text">All</span><span class="ar-text">الكل</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="skin">
+          <span class="en-text">Skin</span><span class="ar-text">بشرة</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="hair">
+          <span class="en-text">Hair</span><span class="ar-text">شعر</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="relaxation">
+          <span class="en-text">Relaxation</span><span class="ar-text">استرخاء</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="sale">
+          <span class="en-text">Sale</span><span class="ar-text">تخفيض</span>
+        </button>
+        <span id="catalogResultCount" class="catalog-result-count">0 products</span>
+      </div>
+    </section>
+
     <!-- Filter Buttons -->
-    <div class="filter-section" id="filterButtons">
+    <div class="filter-section" id="filterButtons" style="display:none;">
       <button class="filter-btn active" data-filter="all">
         <span class="en-text">All</span><span class="ar-text">الكل</span>
       </button>
@@ -446,6 +483,10 @@
     
     <!-- مكان عرض منتجات الفايربيس -->
     <div id="products-container" class="product-grid"></div>
+    <div id="catalogNoResults" class="catalog-no-results">
+      <span class="en-text">No products match your search yet.</span>
+      <span class="ar-text">ما في منتجات مطابقة للبحث حالياً.</span>
+    </div>
 
     <!-- DIY recipe flip cards -->
     <div class="recipes-section">

@@ -93,6 +93,7 @@
                 <span class="en-text">${escapeHtml(nameEn)}</span>
                 <span class="ar-text">${escapeHtml(nameAr)}</span>
               </div>
+              ${item.variantLabel ? `<div style="font-size:0.8rem;color:#6C6253;">${escapeHtml(item.variantLabel)}</div>` : ''}
               <div class="cart-item-price">${item.price} JD</div>
               <div class="cart-qty">
                 <button class="qty-btn" data-id="${item.id}" data-delta="-1">-</button>
@@ -175,15 +176,16 @@
     window.addToCart = function(product) {
       const existing = cart.find(i => i.id === product.id);
       if (existing) {
-        existing.quantity += 1;
+        existing.quantity += product.quantity || 1;
       } else {
         cart.push({
           id: product.id,
           nameEn: product.nameEn,
           nameAr: product.nameAr,
           price: product.price,
-          quantity: 1,
-          img: product.img || 'https://placehold.co/60x60?text=herb'
+          quantity: product.quantity || 1,
+          img: product.img || 'https://placehold.co/60x60?text=herb',
+          variantLabel: product.variantLabel || ''
         });
       }
       saveCart();
@@ -255,6 +257,7 @@ import { app } from './firebase-config.js';
 import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
+window.zarinaProductsById = window.zarinaProductsById || {};
 
 // --- نظام عداد الزوار ---
 const statsDocRef = doc(db, 'site_data', 'stats');
@@ -288,6 +291,220 @@ function listenToVisitorCount() {
 }
 // ------------------------
 
+function cleanCatalogText(value) {
+    return (value || '').toString().toLowerCase().trim();
+}
+
+function escapeAttribute(value) {
+    return (value || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function getProductVariants(product) {
+    const variants = Array.isArray(product.variants) ? product.variants.filter(v => v && v.label && !Number.isNaN(parseFloat(v.price))) : [];
+    if (variants.length > 0) return variants;
+    return [{
+        id: 'default',
+        label: product.unitType ? `1 ${product.unitType}` : 'Default',
+        price: parseFloat(product.price || 0),
+        status: 'in_stock'
+    }];
+}
+
+function ensureProductModal() {
+    let modal = document.getElementById('productDetailModal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'productDetailModal';
+    modal.className = 'product-modal-overlay';
+    modal.innerHTML = `
+      <div class="product-modal">
+        <button class="product-modal-close" id="productModalClose"><i class="fas fa-times"></i></button>
+        <div id="productModalBody"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    if (!document.getElementById('productModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'productModalStyles';
+        style.textContent = `
+          .product-card { cursor: pointer; }
+          .product-modal-overlay { position: fixed; inset: 0; background: rgba(31,30,26,.62); backdrop-filter: blur(4px); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 18px; }
+          .product-modal-overlay.show { display: flex; }
+          .product-modal { background: #FFFEF9; border: 1px solid #EADBC6; border-top: 5px solid var(--gold,#C6A43F); border-radius: 22px; width: min(920px, 96vw); max-height: 92dvh; overflow: auto; position: relative; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+          .product-modal-close { position: absolute; top: 12px; inset-inline-end: 12px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #EADBC6; background: white; cursor: pointer; z-index: 2; }
+          .product-modal-grid { display: grid; grid-template-columns: minmax(260px, .9fr) minmax(0, 1fr); gap: 1.4rem; padding: 1.4rem; }
+          .product-modal-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 18px; border: 1px solid #EADBC6; }
+          .product-modal-title { color: var(--forest-green,#2F5D3A); font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 .5rem; }
+          .product-modal-desc { color: #5C594F; line-height: 1.7; margin-bottom: 1rem; }
+          .variant-options { display: grid; gap: 10px; margin: 1rem 0; }
+          .variant-option { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid #DCCFBC; background: white; border-radius: 14px; padding: 12px; cursor: pointer; font-family: inherit; text-align: inherit; }
+          .variant-option.active { border-color: var(--gold,#C6A43F); box-shadow: 0 0 0 2px rgba(198,164,63,.18); }
+          .variant-option[disabled] { opacity: .48; cursor: not-allowed; }
+          .detail-qty { display: flex; align-items: center; gap: 10px; margin: 1rem 0; }
+          .detail-qty button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #DCCFBC; background: white; cursor: pointer; font-weight: 900; }
+          .detail-add { width: 100%; min-height: 48px; border: 0; border-radius: 999px; background: var(--gold,#C6A43F); color: white; font-weight: 900; cursor: pointer; }
+          .detail-add:disabled { background: #bbb; cursor: not-allowed; }
+          @media (max-width: 720px) { .product-modal-grid { grid-template-columns: 1fr; padding: 1rem; } .product-modal-img { max-height: 320px; } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('show');
+    });
+    modal.querySelector('#productModalClose').addEventListener('click', () => modal.classList.remove('show'));
+    return modal;
+}
+
+function openProductDetail(productId) {
+    const product = window.zarinaProductsById?.[productId];
+    if (!product) return;
+
+    const variants = getProductVariants(product);
+    let selectedIndex = variants.findIndex(v => v.status !== 'out_of_stock');
+    if (selectedIndex < 0) selectedIndex = 0;
+    let qty = 1;
+
+    const modal = ensureProductModal();
+    const body = modal.querySelector('#productModalBody');
+    const nameEn = product.nameEn || product.name || 'Unnamed';
+    const nameAr = product.nameAr || product.name || 'بدون اسم';
+    const descEn = product.longDescEn || product.descEn || product.description || '';
+    const descAr = product.longDescAr || product.descAr || product.description || '';
+
+    function render() {
+        const selected = variants[selectedIndex];
+        const unavailable = selected.status === 'out_of_stock';
+        body.innerHTML = `
+          <div class="product-modal-grid">
+            <img class="product-modal-img" src="${escapeAttribute(product.imageUrl || 'https://placehold.co/700x700?text=ZARINA')}" alt="">
+            <div>
+              <h2 class="product-modal-title"><span class="en-text">${escapeAttribute(nameEn)}</span><span class="ar-text">${escapeAttribute(nameAr)}</span></h2>
+              <p class="product-modal-desc"><span class="en-text">${escapeAttribute(descEn)}</span><span class="ar-text">${escapeAttribute(descAr)}</span></p>
+              <div class="variant-options">
+                ${variants.map((variant, index) => `
+                  <button type="button" class="variant-option ${index === selectedIndex ? 'active' : ''}" data-index="${index}" ${variant.status === 'out_of_stock' ? 'disabled' : ''}>
+                    <strong>${escapeAttribute(variant.label)}</strong>
+                    <span>${parseFloat(variant.price).toFixed(2)} JD ${variant.status === 'out_of_stock' ? '· No stock' : ''}</span>
+                  </button>
+                `).join('')}
+              </div>
+              <div class="detail-qty">
+                <button type="button" id="detailQtyMinus">-</button>
+                <strong id="detailQtyValue">${qty}</strong>
+                <button type="button" id="detailQtyPlus">+</button>
+              </div>
+              <button class="detail-add" id="detailAddBtn" ${unavailable ? 'disabled' : ''}>
+                <span class="en-text">Add selected option</span>
+                <span class="ar-text">إضافة الخيار للسلة</span>
+              </button>
+            </div>
+          </div>
+        `;
+        body.querySelectorAll('.variant-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedIndex = parseInt(btn.dataset.index, 10);
+                render();
+            });
+        });
+        body.querySelector('#detailQtyMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); render(); });
+        body.querySelector('#detailQtyPlus').addEventListener('click', () => { qty += 1; render(); });
+        body.querySelector('#detailAddBtn').addEventListener('click', () => {
+            const variant = variants[selectedIndex];
+            window.addToCart({
+                id: `${productId}__${variant.id || variant.label}`,
+                nameEn,
+                nameAr,
+                price: parseFloat(variant.price),
+                quantity: qty,
+                img: product.imageUrl,
+                variantLabel: variant.label
+            });
+            modal.classList.remove('show');
+        });
+    }
+
+    render();
+    modal.classList.add('show');
+}
+
+window.openProductDetail = openProductDetail;
+
+function initCatalogSearch() {
+    const productsContainer = document.getElementById('products-container');
+    const searchInput = document.getElementById('catalogSearchInput');
+    const sortSelect = document.getElementById('catalogSortSelect');
+    const filterButtons = document.querySelectorAll('.catalog-filter-btn');
+    const resultCount = document.getElementById('catalogResultCount');
+    const noResults = document.getElementById('catalogNoResults');
+
+    if (!productsContainer || !searchInput) return;
+
+    let activeFilter = 'all';
+
+    function applyCatalogFilters() {
+        const query = cleanCatalogText(searchInput.value);
+        const sortValue = sortSelect ? sortSelect.value : 'featured';
+        const cards = Array.from(productsContainer.querySelectorAll('.product-card'));
+        let visibleCount = 0;
+
+        const sortedCards = [...cards].sort((a, b) => {
+            if (sortValue === 'price-asc') {
+                return parseFloat(a.dataset.price || '0') - parseFloat(b.dataset.price || '0');
+            }
+            if (sortValue === 'price-desc') {
+                return parseFloat(b.dataset.price || '0') - parseFloat(a.dataset.price || '0');
+            }
+            if (sortValue === 'name-asc') {
+                return (a.dataset.name || '').localeCompare(b.dataset.name || '', document.documentElement.lang || 'ar');
+            }
+            return parseInt(a.dataset.index || '0', 10) - parseInt(b.dataset.index || '0', 10);
+        });
+
+        sortedCards.forEach(card => productsContainer.appendChild(card));
+
+        sortedCards.forEach(card => {
+            const searchText = cleanCatalogText(card.dataset.search);
+            const tags = cleanCatalogText(card.dataset.tags);
+            const matchesSearch = !query || searchText.includes(query);
+            const matchesFilter = activeFilter === 'all' || tags.includes(activeFilter);
+            const isVisible = matchesSearch && matchesFilter;
+
+            card.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        if (resultCount) {
+            resultCount.textContent = document.documentElement.lang === 'ar'
+                ? `${visibleCount} / ${cards.length} منتج`
+                : `${visibleCount} / ${cards.length} products`;
+        }
+
+        if (noResults) noResults.classList.toggle('show', visibleCount === 0 && cards.length > 0);
+    }
+
+    searchInput.addEventListener('input', applyCatalogFilters);
+    if (sortSelect) sortSelect.addEventListener('change', applyCatalogFilters);
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            activeFilter = cleanCatalogText(button.dataset.filter || 'all');
+            applyCatalogFilters();
+        });
+    });
+
+    applyCatalogFilters();
+}
+
 async function loadProducts() {
     try {
         const productsCollection = collection(db, "products");
@@ -303,6 +520,7 @@ async function loadProducts() {
             const product = docSnap.data();
             
             if (product.isVisible === false) return; 
+            window.zarinaProductsById[docSnap.id] = { id: docSnap.id, ...product };
             
             const nameEn = product.nameEn || product.name || 'Unnamed';
             const nameAr = product.nameAr || product.name || 'بدون اسم';
@@ -313,6 +531,24 @@ async function loadProducts() {
             
             const tagsArray = product.tags || []; 
             const tagsString = tagsArray.join(' ').toLowerCase(); 
+            const hasSale = product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.price);
+            const variants = getProductVariants(product);
+            const displayPrice = Math.min(...variants.map(v => parseFloat(v.price || product.price || 0)));
+            const searchableText = [
+                nameEn,
+                nameAr,
+                descEn,
+                descAr,
+                catEn,
+                catAr,
+                tagsArray.join(' ')
+            ].join(' ').toLowerCase();
+            const filterTags = [
+                tagsString,
+                cleanCatalogText(catEn),
+                cleanCatalogText(catAr),
+                hasSale ? 'sale تخفيض' : ''
+            ].join(' ');
             
             let tagsHtml = '';
             if (tagsArray.length > 0) {
@@ -333,7 +569,7 @@ async function loadProducts() {
             let priceHtml = '';
             let saleBadgeHtml = ''; // شريط الخصم على الصورة
             
-            if (product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.price)) {
+            if (hasSale) {
                 // إذا كان فيه خصم، اعرض السعر القديم مشطوب وجنبه السعر الجديد
                 priceHtml = `
                     <div class="price" style="display: flex; align-items: center; gap: 8px;">
@@ -350,11 +586,11 @@ async function loadProducts() {
                 `;
             } else {
                 // إذا مافي خصم، اعرض السعر العادي
-                priceHtml = `<div class="price">${product.price} JD</div>`;
+                priceHtml = `<div class="price">${displayPrice.toFixed(2)} JD</div>`;
             }
 
             htmlString += `
-                <div class="product-card" data-tags="${tagsString}" style="animation-delay: ${index * 0.05}s; position: relative;">
+                <div class="product-card" data-product-id="${docSnap.id}" data-index="${index}" data-price="${escapeAttribute(displayPrice)}" data-name="${escapeAttribute(nameEn)}" data-tags="${escapeAttribute(filterTags)}" data-search="${escapeAttribute(searchableText)}" style="animation-delay: ${index * 0.05}s; position: relative;">
                     ${saleBadgeHtml}
                     <img class="product-img" src="${product.imageUrl}" alt="product img" loading="lazy">
                     <div class="product-info">
@@ -380,8 +616,8 @@ async function loadProducts() {
                         
                         <button class="add-to-cart firecart-btn" data-id="${docSnap.id}" data-name-en="${nameEn}" data-name-ar="${nameAr}" data-price="${product.price}" data-img="${product.imageUrl}">
                             <i class="fas fa-shopping-bag"></i> 
-                            <span class="en-text">Add to cart</span>
-                            <span class="ar-text">ضيف للسلة</span>
+                            <span class="en-text">Choose size</span>
+                            <span class="ar-text">اختار الكمية</span>
                         </button>
                     </div>
                 </div>
@@ -395,15 +631,16 @@ async function loadProducts() {
         addBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                window.addToCart({
-                    id: btn.getAttribute('data-id'),
-                    nameEn: btn.getAttribute('data-name-en'),
-                    nameAr: btn.getAttribute('data-name-ar'),
-                    price: parseFloat(btn.getAttribute('data-price')),
-                    img: btn.getAttribute('data-img')
-                });
+                e.stopPropagation();
+                openProductDetail(btn.getAttribute('data-id'));
             });
         });
+
+        productsContainer.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', () => openProductDetail(card.dataset.productId));
+        });
+
+        initCatalogSearch();
 
     } catch (error) {
         console.error("خطأ في جلب المنتجات:", error);

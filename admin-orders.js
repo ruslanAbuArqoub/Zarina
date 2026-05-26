@@ -23,6 +23,14 @@ const statusOptions = {
     "Cancelled": "ملغي"
 };
 
+function itemOptionLabel(item) {
+    return item.variantLabel || item.selectedVariant || item.optionLabel || '';
+}
+
+function itemDisplayName(item) {
+    return item.nameAr || item.nameEn || item.name || 'منتج';
+}
+
 async function loadOrders() {
     try {
         // بنجيب الطلبات مرتبة من الأحدث للأقدم
@@ -69,7 +77,15 @@ async function loadOrders() {
             let itemsListHtml = '';
             if (order.items && order.items.length > 0) {
                 order.items.forEach(item => {
-                    itemsListHtml += `<li><span>${item.nameAr || item.nameEn} (x${item.quantity})</span> <span>${(item.price * item.quantity).toFixed(2)} JD</span></li>`;
+                    const option = itemOptionLabel(item);
+                    itemsListHtml += `
+                        <li>
+                            <span>
+                                <strong>${itemDisplayName(item)}</strong> (x${item.quantity})
+                                ${option ? `<br><small style="color:#2F5D3A;"><i class="fas fa-weight-hanging"></i> الحجم/الخيار: ${option}</small>` : ''}
+                            </span>
+                            <span>${(item.price * item.quantity).toFixed(2)} JD</span>
+                        </li>`;
                 });
             }
 
@@ -183,7 +199,15 @@ async function loadOrders() {
 // دالة الطباعة الاحترافية
 function printInvoice(order) {
     const printWindow = window.open('', '_blank');
-    let itemsHtml = order.items.map(i => `<tr><td style="border:1px solid #ccc; padding:8px;">${i.nameAr || i.nameEn}</td><td style="border:1px solid #ccc; padding:8px;">${i.quantity}</td><td style="border:1px solid #ccc; padding:8px;">${(i.price * i.quantity).toFixed(2)} JD</td></tr>`).join('');
+    let itemsHtml = order.items.map(i => `
+        <tr>
+            <td style="border:1px solid #ccc; padding:8px;">${itemDisplayName(i)}</td>
+            <td style="border:1px solid #ccc; padding:8px;">${itemOptionLabel(i) || '-'}</td>
+            <td style="border:1px solid #ccc; padding:8px;">${i.quantity}</td>
+            <td style="border:1px solid #ccc; padding:8px;">${parseFloat(i.price || 0).toFixed(2)} JD</td>
+            <td style="border:1px solid #ccc; padding:8px;">${(parseFloat(i.price || 0) * parseFloat(i.quantity || 0)).toFixed(2)} JD</td>
+        </tr>
+    `).join('');
     
     const html = `
     <html dir="rtl">
@@ -208,7 +232,7 @@ function printInvoice(order) {
             <p><strong>طريقة الدفع:</strong> ${order.paymentMethod}</p>
         </div>
         <table>
-            <tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr>
+            <tr><th>المنتج</th><th>الحجم / الخيار</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr>
             ${itemsHtml}
         </table>
         <div class="total">رسوم التوصيل: ${order.deliveryFee || 3} JD</div>

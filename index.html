@@ -236,6 +236,10 @@
           <span class="en-text">Apothecary</span>
           <span class="ar-text">منتجاتنا</span>
         </a>
+        <a href="Collections.html">
+          <span class="en-text">Collections</span>
+          <span class="ar-text">المجموعات</span>
+        </a>
         <a href="CountactUS.html">
           <span class="en-text">Contact</span>
           <span class="ar-text">تواصل معنا</span>
@@ -287,7 +291,43 @@
       <span class="en-text">From earth, with intention</span>
       <span class="ar-text">من قلب الطبيعة، صُنعناهم بحُب</span>
     </h2>
+    <section class="catalog-tools" aria-label="Product search and filters">
+      <div class="catalog-search-row">
+        <div class="catalog-search-box">
+          <i class="fas fa-search"></i>
+          <input type="search" id="catalogSearchInput" class="catalog-search-input" placeholder="Search natural products... | ابحث عن المنتجات الطبيعية...">
+        </div>
+        <select id="catalogSortSelect" class="catalog-sort-select" aria-label="Sort products">
+          <option value="featured">Featured | المميزة</option>
+          <option value="price-asc">Price: low to high | السعر الأقل</option>
+          <option value="price-desc">Price: high to low | السعر الأعلى</option>
+          <option value="name-asc">Name A-Z | الاسم</option>
+        </select>
+      </div>
+      <div class="catalog-filter-row" id="catalogFilterRow">
+        <button type="button" class="catalog-filter-btn active" data-filter="all">
+          <span class="en-text">All</span><span class="ar-text">الكل</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="skin">
+          <span class="en-text">Skin</span><span class="ar-text">بشرة</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="hair">
+          <span class="en-text">Hair</span><span class="ar-text">شعر</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="relaxation">
+          <span class="en-text">Relaxation</span><span class="ar-text">استرخاء</span>
+        </button>
+        <button type="button" class="catalog-filter-btn" data-filter="sale">
+          <span class="en-text">Sale</span><span class="ar-text">تخفيض</span>
+        </button>
+        <span id="catalogResultCount" class="catalog-result-count">0 products</span>
+      </div>
+    </section>
     <div id="products-container" class="products-grid"></div>
+    <div id="catalogNoResults" class="catalog-no-results">
+      <span class="en-text">No products match your search yet.</span>
+      <span class="ar-text">ما في منتجات مطابقة للبحث حالياً.</span>
+    </div>
   </div>
 </main>
 
@@ -317,7 +357,7 @@
     </div>
     <button class="checkout-action" id="proceedCheckoutBtn">
       <span class="en-text"><i class="fas fa-feather-alt"></i> Proceed to Checkout</span>
-      <span class="ar-text"><i class="fas fa-feather-alt"></i> كمّلي طلبك</span>
+      <span class="ar-text"><i class="fas fa-feather-alt"></i> كمل طلبك</span>
     </button>
   </div>
 </div>

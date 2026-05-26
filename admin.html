@@ -252,9 +252,115 @@
     .btn-toggle { color: var(--sage, #7B9C6E); }
     .btn-toggle.hidden { color: #A09E98; }
     .btn-edit { color: #4A90E2; }
+    .btn-move-collection { color: var(--forest-green, #2F5D3A); }
     .btn-delete { color: #C94C4C; }
     
     .btn-icon:hover {
+      background: #F0EBE1;
+    }
+
+    .products-toolbar {
+      background: #FCF8F0;
+      border: 1px solid #EADBC6;
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: minmax(220px, 1.5fr) minmax(180px, 1fr) minmax(170px, 0.8fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .toolbar-field label {
+      display: block;
+      color: #4A463E;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-filter-reset {
+      background: white;
+      border: 1px solid #D9CBB5;
+      color: #4A463E;
+      border-radius: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .btn-filter-reset:hover {
+      background: #F0EBE1;
+    }
+
+    .products-count {
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .collection-form {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+      gap: 15px;
+      align-items: end;
+      background: #FCF8F0;
+      border: 1px solid #D9CBB5;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+    }
+
+    .collection-note {
+      color: #666;
+      display: block;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+
+    .variants-box {
+      background: #FCF8F0;
+      border: 1px solid #EADBC6;
+      border-radius: 14px;
+      padding: 1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .variant-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 0.9fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .variant-row input,
+    .variant-row select {
+      min-height: 42px;
+    }
+
+    .btn-small {
+      border: 1px solid #D9CBB5;
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 800;
+      min-height: 42px;
+      padding: 0 12px;
+    }
+
+    .btn-small:hover {
       background: #F0EBE1;
     }
 
@@ -287,6 +393,78 @@
     }
     input:checked + .slider { background-color: var(--gold, #C6A43F); }
     input:checked + .slider:before { transform: translateX(22px); }
+
+    @media (max-width: 760px) {
+      .admin-header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+      }
+
+      .admin-title {
+        font-size: 1.45rem;
+      }
+
+      .admin-nav,
+      .user-info {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .admin-nav a {
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .admin-container {
+        margin: 1rem auto;
+        padding: 0 14px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-card,
+      .panel {
+        padding: 1rem;
+        border-radius: 16px;
+      }
+
+      .table-responsive {
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 860px;
+      }
+
+      .action-btns {
+        flex-wrap: wrap;
+      }
+
+      .products-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .collection-form {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+      }
+
+      .variant-row {
+        grid-template-columns: 1fr;
+      }
+    }
 
   </style>
 </head>
@@ -364,12 +542,42 @@
             <input type="text" id="prodCatEn" class="form-control" placeholder="e.g. Butter" required>
           </div>
           <div class="form-group">
+            <label>المجموعة - Collection</label>
+            <input type="text" id="prodCollection" class="form-control" list="collectionsDatalist" placeholder="مثال: مجموعة الزيوت">
+            <datalist id="collectionsDatalist"></datalist>
+            <small class="collection-note">اكتب اسم مجموعة موجودة أو اسم جديد، والمنتج رح يظهر داخلها في صفحة Collections.</small>
+          </div>
+          <div class="form-group">
             <label>وصف المنتج (عربي) - descAr</label>
             <input type="text" id="prodDescAr" class="form-control" placeholder="المكونات الخام الطبيعية" required>
           </div>
           <div class="form-group">
             <label>وصف المنتج (إنجليزي) - descEn</label>
             <input type="text" id="prodDescEn" class="form-control" placeholder="RAW INGREDIENTS" required>
+          </div>
+          <div class="form-group">
+            <label>وصف تفصيلي للمنتج (عربي)</label>
+            <textarea id="prodLongDescAr" class="form-control" rows="3" placeholder="اكتب تفاصيل أعمق: الاستخدام، القوام، الرائحة، طريقة الحفظ..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Detailed product description (English)</label>
+            <textarea id="prodLongDescEn" class="form-control" rows="3" placeholder="Usage, texture, scent, storage notes..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>نوع الكمية</label>
+            <select id="prodUnitType" class="form-control">
+              <option value="g">جرام / g</option>
+              <option value="kg">كيلو / kg</option>
+              <option value="ml">مل / ml</option>
+              <option value="l">لتر / l</option>
+              <option value="piece">قطعة / piece</option>
+            </select>
+          </div>
+          <div class="variants-box">
+            <label style="display:block; margin-bottom:8px;">خيارات الكمية والسعر</label>
+            <div id="productVariantsList"></div>
+            <button type="button" id="addVariantBtn" class="btn-small"><i class="fas fa-plus"></i> إضافة خيار</button>
+            <small class="collection-note">مثال: 250g بسعر 3.75، أو 1kg بسعر 10. اكتب الحالة No stock إذا الكمية غير متوفرة.</small>
           </div>
           <div class="form-group">
             <label>السعر الأساسي / الحالي (JD) - price</label>
@@ -394,12 +602,39 @@
 
       <div class="panel">
         <h2><i class="fas fa-box-open"></i> إدارة المنتجات</h2>
+        <div class="products-toolbar">
+          <div class="toolbar-field">
+            <label for="productSearchInput">بحث سريع</label>
+            <input type="search" id="productSearchInput" class="form-control" placeholder="ابحث باسم المنتج أو القسم...">
+          </div>
+          <div class="toolbar-field">
+            <label for="productCategoryFilter">فلترة حسب القسم</label>
+            <select id="productCategoryFilter" class="form-control">
+              <option value="all">كل الأقسام</option>
+            </select>
+          </div>
+          <div class="toolbar-field">
+            <label for="productVisibilityFilter">حالة الظهور</label>
+            <select id="productVisibilityFilter" class="form-control">
+              <option value="all">الكل</option>
+              <option value="visible">الظاهرة فقط</option>
+              <option value="hidden">المخفية فقط</option>
+            </select>
+          </div>
+          <div class="toolbar-actions">
+            <button type="button" id="clearProductFiltersBtn" class="btn-filter-reset">
+              <i class="fas fa-rotate-left"></i> تصفير
+            </button>
+            <span id="productsFilterCount" class="products-count">0 منتج</span>
+          </div>
+        </div>
         <div class="table-responsive">
           <table>
             <thead>
               <tr>
                 <th>الصورة</th>
                 <th>اسم المنتج</th>
+                <th>القسم</th>
                 <th>السعر</th>
                 <th>حالة الظهور</th>
                 <th>إجراءات</th>
@@ -411,7 +646,37 @@
         </div>
       </div>
 
-    </div> <div class="panel" style="margin-top: 2rem;">
+    </div>
+
+    <div class="panel" style="margin-top: 2rem;">
+        <h2><i class="fas fa-layer-group"></i> إدارة المجموعات</h2>
+        <form id="addCollectionForm" class="collection-form">
+            <div class="form-group">
+                <label>اسم المجموعة بالعربي *</label>
+                <input type="text" id="collectionNameAr" class="form-control" placeholder="مثال: مجموعة الزيوت" required>
+            </div>
+            <div class="form-group">
+                <label>اسم المجموعة بالإنجليزي</label>
+                <input type="text" id="collectionNameEn" class="form-control" placeholder="e.g. Oils Collection">
+            </div>
+            <button type="submit" class="btn-submit" style="margin-top:0;">إضافة مجموعة</button>
+        </form>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المجموعة</th>
+                        <th>الاسم الإنجليزي</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="adminCollectionsTable">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 2rem;">
         <h2><i class="fas fa-ticket-alt"></i> إدارة كوبونات الخصم</h2>
         
         <form id="addCouponForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 2rem; background: #FCF8F0; padding: 1.5rem; border-radius: 12px; border: 1px solid #D9CBB5;">
