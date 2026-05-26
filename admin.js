@@ -1,14 +1,17 @@
 // ========== admin.js ==========
 
 import { app } from './firebase-config.js';
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, setDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(() => {});
 const auth = getAuth(app);
 const productsCol = collection(db, "products");
 const collectionsCol = collection(db, "collections");
+const ordersCol = collection(db, "orders");
 const statsDocRef = doc(db, 'site_data', 'stats');
+const announcementDocRef = doc(db, 'site_data', 'announcement');
 
 // 🔥 كود الحماية
 onAuthStateChanged(auth, (user) => {
@@ -59,6 +62,260 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadStats();
 
+    let latestOrdersForDashboard = [];
+
+    function formatDashboardMoney(value) {
+        const amount = Number(value) || 0;
+        return `${amount.toFixed(2)} JD`;
+    }
+
+    function getDashboardOrderDate(order) {
+        const createdAt = order.createdAt;
+        if (!createdAt) return new Date();
+        if (typeof createdAt.toDate === 'function') return createdAt.toDate();
+        if (createdAt.seconds) return new Date(createdAt.seconds * 1000);
+        const parsed = new Date(createdAt);
+        return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+    }
+
+    function isDashboardCountedOrder(order) {
+        return !['Cancelled', 'Canceled', 'Rejected'].includes(order.status || '');
+    }
+
+    function dashboardStartOfDay(date) {
+        const copy = new Date(date);
+        copy.setHours(0, 0, 0, 0);
+        return copy;
+    }
+
+    function dashboardAddDays(date, days) {
+        const copy = new Date(date);
+        copy.setDate(copy.getDate() + days);
+        return copy;
+    }
+
+    function dashboardMonthKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function dashboardDayKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function dashboardShortDate(date) {
+        return date.toLocaleDateString('ar-JO', { month: 'short', day: 'numeric' });
+    }
+
+    function dashboardShortMonth(date) {
+        return date.toLocaleDateString('ar-JO', { month: 'short', year: '2-digit' });
+    }
+
+    function dashboardUpdateText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    function getDashboardBuckets(range) {
+        const today = dashboardStartOfDay(new Date());
+        if (range === '12m') {
+            const buckets = [];
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                buckets.push({ key: dashboardMonthKey(date), label: dashboardShortMonth(date), sales: 0, orders: 0 });
+            }
+            return buckets;
+        }
+
+        const days = range === '30d' ? 30 : 7;
+        const buckets = [];
+        for (let i = days - 1; i >= 0; i--) {
+            const date = dashboardAddDays(today, -i);
+            buckets.push({ key: dashboardDayKey(date), label: dashboardShortDate(date), sales: 0, orders: 0 });
+        }
+        return buckets;
+    }
+
+    function renderDashboardChart(orders) {
+        const chart = document.getElementById('salesChartBars');
+        const tooltip = document.getElementById('salesChartTooltip');
+        const range = document.getElementById('salesChartRange')?.value || '7d';
+        if (!chart) return;
+
+        const buckets = getDashboardBuckets(range);
+        const bucketMap = new Map(buckets.map(bucket => [bucket.key, bucket]));
+
+        orders.forEach(order => {
+            if (!isDashboardCountedOrder(order)) return;
+            const date = getDashboardOrderDate(order);
+            const key = range === '12m' ? dashboardMonthKey(date) : dashboardDayKey(date);
+            const bucket = bucketMap.get(key);
+            if (!bucket) return;
+            bucket.sales += Number(order.totalAmount) || 0;
+            bucket.orders += 1;
+        });
+
+        const maxSales = Math.max(...buckets.map(bucket => bucket.sales), 0);
+        chart.innerHTML = buckets.map(bucket => {
+            const height = maxSales > 0 && bucket.sales > 0
+                ? 7 + (Math.log(bucket.sales + 1) / Math.log(maxSales + 1)) * 93
+                : 2;
+            return `
+                <div class="sales-bar-wrap">
+                    <button class="sales-bar" type="button" style="height:${height}%"
+                        data-label="${bucket.label}"
+                        data-sales="${formatDashboardMoney(bucket.sales)}"
+                        data-orders="${bucket.orders}"></button>
+                    <span class="sales-bar-label">${bucket.label}</span>
+                </div>
+            `;
+        }).join('');
+
+        if (!tooltip) return;
+        chart.querySelectorAll('.sales-bar').forEach(bar => {
+            const showTooltip = (event) => {
+                tooltip.innerHTML = `<strong>${bar.dataset.sales}</strong><span>${bar.dataset.label}</span><br><span>${bar.dataset.orders} طلب</span>`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = `${event.clientX}px`;
+                tooltip.style.top = `${event.clientY}px`;
+            };
+            bar.addEventListener('mousemove', showTooltip);
+            bar.addEventListener('focus', () => {
+                const rect = chart.getBoundingClientRect();
+                showTooltip({ clientX: rect.left + rect.width / 2, clientY: rect.top + 70 });
+            });
+            bar.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+            bar.addEventListener('blur', () => { tooltip.style.display = 'none'; });
+        });
+    }
+
+    function renderDashboardTopProducts(orders) {
+        const list = document.getElementById('topProductsList');
+        if (!list) return;
+
+        const products = new Map();
+        orders.forEach(order => {
+            if (!isDashboardCountedOrder(order) || !Array.isArray(order.items)) return;
+            order.items.forEach(item => {
+                const name = item.nameAr || item.nameEn || item.name || 'منتج بدون اسم';
+                const qty = Number(item.quantity) || 1;
+                const price = Number(item.price) || 0;
+                const current = products.get(name) || { name, qty: 0, sales: 0 };
+                current.qty += qty;
+                current.sales += price * qty;
+                products.set(name, current);
+            });
+        });
+
+        const top = Array.from(products.values())
+            .sort((a, b) => b.qty - a.qty || b.sales - a.sales)
+            .slice(0, 5);
+
+        if (!top.length) {
+            list.innerHTML = '<div style="color:#766F63; font-weight:800; padding:1rem;">لا يوجد منتجات مباعة بعد.</div>';
+            return;
+        }
+
+        list.innerHTML = top.map((item, index) => `
+            <div class="top-product-row">
+                <span class="top-rank">${index + 1}</span>
+                <div>
+                    <strong>${escapeHtml(item.name)}</strong>
+                    <small>${item.qty} قطعة / خيار</small>
+                </div>
+                <span>${formatDashboardMoney(item.sales)}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderDashboardAnalytics(orders) {
+        latestOrdersForDashboard = orders;
+        const countedOrders = orders.filter(isDashboardCountedOrder);
+        const now = new Date();
+        const weekStart = dashboardAddDays(dashboardStartOfDay(now), -6);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+
+        const totals = countedOrders.reduce((acc, order) => {
+            const date = getDashboardOrderDate(order);
+            const amount = Number(order.totalAmount) || 0;
+            acc.allSales += amount;
+            acc.allOrders += 1;
+            if (date >= weekStart) { acc.weekSales += amount; acc.weekOrders += 1; }
+            if (date >= monthStart) { acc.monthSales += amount; acc.monthOrders += 1; }
+            if (date >= yearStart) { acc.yearSales += amount; acc.yearOrders += 1; }
+            return acc;
+        }, { allSales: 0, allOrders: 0, weekSales: 0, weekOrders: 0, monthSales: 0, monthOrders: 0, yearSales: 0, yearOrders: 0 });
+
+        dashboardUpdateText('adminTotalEarnings', formatDashboardMoney(totals.allSales));
+        dashboardUpdateText('adminTotalOrders', totals.allOrders);
+        dashboardUpdateText('salesThisWeek', formatDashboardMoney(totals.weekSales));
+        dashboardUpdateText('ordersThisWeek', `${totals.weekOrders} طلب`);
+        dashboardUpdateText('salesThisMonth', formatDashboardMoney(totals.monthSales));
+        dashboardUpdateText('ordersThisMonth', `${totals.monthOrders} طلب`);
+        dashboardUpdateText('salesThisYear', formatDashboardMoney(totals.yearSales));
+        dashboardUpdateText('ordersThisYear', `${totals.yearOrders} طلب`);
+        dashboardUpdateText('avgOrderValue', formatDashboardMoney(totals.allOrders ? totals.allSales / totals.allOrders : 0));
+        dashboardUpdateText('validOrdersCount', `${totals.allOrders} طلب محسوب`);
+        dashboardUpdateText('dashboardUpdatedAt', `آخر تحديث: ${now.toLocaleString('ar-JO')}`);
+
+        renderDashboardChart(countedOrders);
+        renderDashboardTopProducts(countedOrders);
+    }
+
+    onSnapshot(ordersCol, (ordersSnap) => {
+        const orders = [];
+        ordersSnap.forEach((orderDoc) => {
+            orders.push({ id: orderDoc.id, ...orderDoc.data() });
+        });
+        renderDashboardAnalytics(orders);
+    }, (error) => {
+        console.log("Dashboard orders error", error);
+        dashboardUpdateText('dashboardUpdatedAt', 'تعذر تحميل بيانات المبيعات حالياً.');
+    });
+
+    document.getElementById('salesChartRange')?.addEventListener('change', () => {
+        renderDashboardChart(latestOrdersForDashboard.filter(isDashboardCountedOrder));
+    });
+
+    const announcementForm = document.getElementById('announcementForm');
+    const announcementTextAr = document.getElementById('announcementTextAr');
+    const announcementTextEn = document.getElementById('announcementTextEn');
+    const announcementActive = document.getElementById('announcementActive');
+
+    onSnapshot(announcementDocRef, (docSnap) => {
+        const data = docSnap.exists() ? docSnap.data() : {};
+        if (announcementTextAr) announcementTextAr.value = data.textAr || '';
+        if (announcementTextEn) announcementTextEn.value = data.textEn || '';
+        if (announcementActive) announcementActive.value = data.isActive === false ? 'false' : 'true';
+    });
+
+    announcementForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = announcementForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+        }
+
+        try {
+            await setDoc(announcementDocRef, {
+                textAr: announcementTextAr?.value.trim() || '',
+                textEn: announcementTextEn?.value.trim() || '',
+                isActive: announcementActive?.value === 'true',
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+            alert('تم حفظ شريط الإعلان بنجاح!');
+        } catch (error) {
+            console.error('Announcement save error:', error);
+            alert('حدث خطأ أثناء حفظ شريط الإعلان.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> حفظ الشريط';
+            }
+        }
+    });
+
 
     // ==========================================
     // 🔥 بناء النافذة المنبثقة الاحترافية (Modal)
@@ -78,14 +335,33 @@ document.addEventListener('DOMContentLoaded', () => {
             .zarina-modal-overlay.active { opacity: 1; }
             .zarina-modal {
                 background: #FFFEF9; padding: 2rem; border-radius: 24px;
-                width: 90%; max-width: 450px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+                width: min(94vw, 920px); max-width: 920px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
                 max-height: 90vh; overflow-y: auto;
                 transform: translateY(20px); transition: transform 0.3s ease;
                 border: 1px solid #EADBC6; border-top: 5px solid var(--gold, #C6A43F);
                 direction: rtl; font-family: 'Tajawal', sans-serif;
             }
             .zarina-modal-overlay.active .zarina-modal { transform: translateY(0); }
+            #collectionEditModal .zarina-modal { max-width: 520px; }
             .zarina-modal h3 { color: var(--forest-green, #2F5D3A); margin-top: 0; margin-bottom: 1.5rem; font-size: 1.4rem;}
+            #editPriceForm {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1rem 1.25rem;
+            }
+            #editPriceForm .form-group,
+            #editPriceForm .modal-variants,
+            #editPriceForm .modal-actions {
+                margin: 0;
+            }
+            #editPriceForm .modal-variants,
+            #editPriceForm .modal-actions {
+                grid-column: 1 / -1;
+            }
+            #editPriceForm textarea {
+                min-height: 150px;
+                resize: vertical;
+            }
             .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
             .btn-cancel {
                 flex: 1; padding: 12px; background: #F0EBE1; border: 1px solid #D9CBB5;
@@ -107,9 +383,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 background: var(--gold, #C6A43F); border-color: var(--gold, #C6A43F); color: white;
             }
             .modal-hint { color: #666; display: block; font-size: 0.85rem; line-height: 1.5; margin-top: 8px; }
-            .modal-variants { background:#FCF8F0; border:1px solid #EADBC6; border-radius:14px; padding:1rem; margin-top:1rem; }
-            .modal-variants .variant-row { grid-template-columns: 1.1fr 0.8fr 0.9fr auto; }
-            @media (max-width: 560px) { .modal-variants .variant-row { grid-template-columns: 1fr; } }
+            .modal-variants { background:#FCF8F0; border:1px solid #EADBC6; border-radius:14px; padding:1rem; margin-top:1rem; overflow-x:auto; }
+            .modal-variants .variant-row { grid-template-columns: minmax(150px, 1.15fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) minmax(130px, 0.9fr) auto; }
+            .modal-variants .form-control { padding: 10px 12px; }
+            @media (max-width: 720px) {
+                .zarina-modal { width: min(96vw, 620px); padding: 1.2rem; }
+                #editPriceForm { grid-template-columns: 1fr; }
+                .modal-variants .variant-row { grid-template-columns: 1fr; }
+                .modal-actions { flex-direction: column; }
+            }
         `;
         document.head.appendChild(style);
 
@@ -273,8 +555,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // تشغيل دالة بناء النافذة عند تحميل الصفحة
     setupCustomModal();
 
-    let allProducts = [];
-    let allCollections = [];
+let allProducts = [];
+let allCollections = [];
+const ADMIN_PRODUCTS_CACHE_KEY = 'zarinaAdminProductsCacheV2';
+const ADMIN_COLLECTIONS_CACHE_KEY = 'zarinaAdminCollectionsCacheV2';
+const ADMIN_CACHE_MAX_AGE = 1000 * 60 * 60 * 6;
+
+function readAdminCache(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || !Array.isArray(payload.items)) return null;
+        if (Date.now() - (payload.savedAt || 0) > ADMIN_CACHE_MAX_AGE) return null;
+        return payload.items;
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeAdminCache(key, items) {
+    try {
+        localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), items }));
+    } catch (error) {}
+}
 
     const productSearchInput = document.getElementById('productSearchInput');
     const productCategoryFilter = document.getElementById('productCategoryFilter');
@@ -329,7 +633,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="variant-row">
                 <input type="text" class="form-control variant-label" placeholder="250g / 1kg / 100ml" value="${escapeHtml(variant.label || '')}">
-                <input type="number" step="0.01" class="form-control variant-price" placeholder="السعر" value="${variant.price ?? ''}">
+                <input type="number" step="0.01" class="form-control variant-price" placeholder="السعر الحالي" value="${variant.price ?? ''}">
+                <input type="number" step="0.01" class="form-control variant-old-price" placeholder="قبل الخصم" value="${variant.oldPrice ?? ''}">
                 <select class="form-control variant-status">
                     <option value="in_stock" ${status === 'in_stock' ? 'selected' : ''}>متوفر</option>
                     <option value="low_stock" ${status === 'low_stock' ? 'selected' : ''}>كمية قليلة</option>
@@ -362,9 +667,17 @@ document.addEventListener('DOMContentLoaded', () => {
             .map((row, index) => {
                 const label = row.querySelector('.variant-label')?.value.trim() || '';
                 const price = parseFloat(row.querySelector('.variant-price')?.value || '');
+                const oldPriceValue = row.querySelector('.variant-old-price')?.value || '';
+                const oldPrice = oldPriceValue.trim() !== '' ? parseFloat(oldPriceValue) : null;
                 const status = row.querySelector('.variant-status')?.value || 'in_stock';
                 if (!label || Number.isNaN(price)) return null;
-                return { id: slugifyCollectionName(`${label}-${index}`), label, price, status };
+                return {
+                    id: slugifyCollectionName(`${label}-${index}`),
+                    label,
+                    price,
+                    oldPrice: Number.isNaN(oldPrice) ? null : oldPrice,
+                    status
+                };
             })
             .filter(Boolean);
     }
@@ -627,6 +940,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>';
 
         try {
+            const cachedProducts = readAdminCache(ADMIN_PRODUCTS_CACHE_KEY);
+            if (cachedProducts) {
+                allProducts = cachedProducts;
+                populateCategoryFilter();
+                renderProductsTable();
+            }
+
             const querySnapshot = await getDocs(productsCol);
             allProducts = [];
 
@@ -640,6 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return aName.localeCompare(bName, 'ar');
             });
 
+            writeAdminCache(ADMIN_PRODUCTS_CACHE_KEY, allProducts);
             populateCategoryFilter();
             renderProductsTable();
         } catch (error) {
@@ -801,9 +1122,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm("تحذير: هاد الإجراء رح يحذف كل الطلبات السابقة نهائياً عشان يصفر الأرباح والطلبات. متأكد؟")) {
                 try {
                     const ordersSnap = await getDocs(collection(db, "orders"));
-                    ordersSnap.forEach(async (orderDoc) => {
-                        await deleteDoc(doc(db, "orders", orderDoc.id));
+                    const deleteJobs = [];
+                    ordersSnap.forEach((orderDoc) => {
+                        deleteJobs.push(deleteDoc(doc(db, "orders", orderDoc.id)));
                     });
+                    await Promise.all(deleteJobs);
                     alert("تم تصفير الطلبات والأرباح بنجاح!");
                     loadStats(); 
                 } catch (error) {

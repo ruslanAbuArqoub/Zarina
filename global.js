@@ -6,13 +6,19 @@
     // ---------- 0. LANGUAGE TOGGLE LOGIC ----------
     const langToggle = document.getElementById('langToggle');
     let currentLang = localStorage.getItem('zarinaLang') || 'ar'; // خلينا العربي الأساسي
-    document.documentElement.lang = currentLang;
+
+    function applyLanguage(lang) {
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    }
+
+    applyLanguage(currentLang);
 
     if (langToggle) {
       langToggle.addEventListener('click', () => {
         currentLang = currentLang === 'en' ? 'ar' : 'en';
         localStorage.setItem('zarinaLang', currentLang);
-        document.documentElement.lang = currentLang;
+        applyLanguage(currentLang);
       });
     }
 
@@ -20,13 +26,41 @@
     const hamburger = document.querySelector('.hamburger');
     const navLinks = document.querySelector('.nav-links');
     if (hamburger && navLinks) {
+      hamburger.setAttribute('aria-expanded', 'false');
+
+      const mobileCartIcon = document.getElementById('cartIconBtn');
+      const navbar = hamburger.closest('.navbar');
+      const mobileActions = document.createElement('div');
+      mobileActions.className = 'mobile-header-actions';
+      mobileActions.setAttribute('aria-label', 'Quick actions');
+
+      if (navbar) {
+        navbar.insertBefore(mobileActions, hamburger);
+      }
+
+      function syncMobileHeaderActions() {
+        if (langToggle && langToggle.parentElement !== mobileActions) mobileActions.appendChild(langToggle);
+        if (mobileCartIcon && mobileCartIcon.parentElement !== mobileActions) mobileActions.appendChild(mobileCartIcon);
+      }
+
+      syncMobileHeaderActions();
+      window.addEventListener('resize', syncMobileHeaderActions, { passive: true });
+
+      const currentPage = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      navLinks.querySelectorAll('a').forEach(link => {
+        const href = (link.getAttribute('href') || '').split('/').pop().toLowerCase();
+        if (href === currentPage) link.classList.add('active');
+      });
+
       hamburger.addEventListener('click', function(e) {
         e.stopPropagation();
         navLinks.classList.toggle('open');
+        hamburger.setAttribute('aria-expanded', navLinks.classList.contains('open') ? 'true' : 'false');
       });
       navLinks.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           navLinks.classList.remove('open');
+          hamburger.setAttribute('aria-expanded', 'false');
         });
       });
     }
@@ -217,9 +251,14 @@
     const cartOverlay = document.getElementById('cartOverlay');
     const closeCartBtn = document.getElementById('closeCartBtn');
 
+    if (cartIcon) cartIcon.setAttribute('aria-label', 'Open cart');
+    if (closeCartBtn) closeCartBtn.setAttribute('aria-label', 'Close cart');
+    if (cartSidebarElem) cartSidebarElem.setAttribute('aria-hidden', 'true');
+
     function openCart() {
       if (cartSidebarElem) cartSidebarElem.classList.add('open');
       if (cartOverlay) cartOverlay.classList.add('active');
+      if (cartSidebarElem) cartSidebarElem.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       renderCartSidebar();
     }
@@ -227,12 +266,22 @@
     function closeCart() {
       if (cartSidebarElem) cartSidebarElem.classList.remove('open');
       if (cartOverlay) cartOverlay.classList.remove('active');
+      if (cartSidebarElem) cartSidebarElem.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
     }
 
     if (cartIcon) cartIcon.addEventListener('click', openCart);
     if (closeCartBtn) closeCartBtn.addEventListener('click', closeCart);
     if (cartOverlay) cartOverlay.addEventListener('click', closeCart);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      closeCart();
+      if (navLinks) navLinks.classList.remove('open');
+      if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+      document.getElementById('productDetailModal')?.classList.remove('show');
+      document.body.style.overflow = '';
+    });
 
     const proceedBtn = document.getElementById('proceedCheckoutBtn');
     if (proceedBtn) {
@@ -246,6 +295,22 @@
     }
 
     loadCart();
+
+    // ---------- 4. BACK TO TOP ----------
+    const backTop = document.createElement('button');
+    backTop.type = 'button';
+    backTop.className = 'back-to-top';
+    backTop.setAttribute('aria-label', 'Back to top');
+    backTop.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    document.body.appendChild(backTop);
+
+    window.addEventListener('scroll', () => {
+      backTop.classList.toggle('show', window.scrollY > 650);
+    }, { passive: true });
+
+    backTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   });
 })();
 
@@ -254,10 +319,35 @@
 // ==========================================
 
 import { app } from './firebase-config.js';
-import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(() => {});
 window.zarinaProductsById = window.zarinaProductsById || {};
+const PRODUCTS_CACHE_KEY = 'zarinaProductsCacheV2';
+const PRODUCTS_CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
+const announcementDocRef = doc(db, 'site_data', 'announcement');
+
+function readLocalCache(key, maxAge = PRODUCTS_CACHE_MAX_AGE) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || !Array.isArray(payload.items)) return null;
+        if (Date.now() - (payload.savedAt || 0) > maxAge) return null;
+        return payload.items;
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeLocalCache(key, items) {
+    try {
+        localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), items }));
+    } catch (error) {
+        // Storage can fail in private mode; the live Firestore load still works.
+    }
+}
 
 // --- نظام عداد الزوار ---
 const statsDocRef = doc(db, 'site_data', 'stats');
@@ -291,6 +381,37 @@ function listenToVisitorCount() {
 }
 // ------------------------
 
+function listenAnnouncementBar() {
+    if (!document.querySelector('body > header:not(.admin-header)')) return;
+
+    let bar = document.getElementById('siteAnnouncementBar');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'siteAnnouncementBar';
+        bar.className = 'site-announcement';
+        document.body.prepend(bar);
+    }
+
+    onSnapshot(announcementDocRef, (docSnap) => {
+        const data = docSnap.exists() ? docSnap.data() : {};
+        const textAr = (data.textAr || '').trim();
+        const textEn = (data.textEn || '').trim();
+        const hasText = textAr || textEn;
+        const isActive = data.isActive !== false && hasText;
+
+        document.documentElement.style.setProperty('--announcement-height', isActive ? '42px' : '0px');
+        bar.innerHTML = isActive ? `
+            <i class="fas fa-bullhorn"></i>
+            <span class="en-text">${escapeAttribute(textEn || textAr)}</span>
+            <span class="ar-text">${escapeAttribute(textAr || textEn)}</span>
+        ` : '';
+    }, () => {
+        document.documentElement.style.setProperty('--announcement-height', '0px');
+    });
+}
+
+// ------------------------
+
 function cleanCatalogText(value) {
     return (value || '').toString().toLowerCase().trim();
 }
@@ -310,6 +431,7 @@ function getProductVariants(product) {
         id: 'default',
         label: product.unitType ? `1 ${product.unitType}` : 'Default',
         price: parseFloat(product.price || 0),
+        oldPrice: product.oldPrice ? parseFloat(product.oldPrice) : null,
         status: 'in_stock'
     }];
 }
@@ -355,10 +477,15 @@ function ensureProductModal() {
         document.head.appendChild(style);
     }
 
+    function closeProductModal() {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
+        if (e.target === modal) closeProductModal();
     });
-    modal.querySelector('#productModalClose').addEventListener('click', () => modal.classList.remove('show'));
+    modal.querySelector('#productModalClose').addEventListener('click', closeProductModal);
     return modal;
 }
 
@@ -391,7 +518,11 @@ function openProductDetail(productId) {
                 ${variants.map((variant, index) => `
                   <button type="button" class="variant-option ${index === selectedIndex ? 'active' : ''}" data-index="${index}" ${variant.status === 'out_of_stock' ? 'disabled' : ''}>
                     <strong>${escapeAttribute(variant.label)}</strong>
-                    <span>${parseFloat(variant.price).toFixed(2)} JD ${variant.status === 'out_of_stock' ? '· No stock' : ''}</span>
+                    <span>
+                      ${parseFloat(variant.price).toFixed(2)} JD
+                      ${variant.oldPrice && parseFloat(variant.oldPrice) > parseFloat(variant.price) ? `<del style="color:#9B9487; margin-inline-start:6px;">${parseFloat(variant.oldPrice).toFixed(2)} JD</del>` : ''}
+                      ${variant.status === 'out_of_stock' ? '· No stock' : ''}
+                    </span>
                   </button>
                 `).join('')}
               </div>
@@ -427,11 +558,13 @@ function openProductDetail(productId) {
                 variantLabel: variant.label
             });
             modal.classList.remove('show');
+            document.body.style.overflow = '';
         });
     }
 
     render();
     modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
 }
 
 window.openProductDetail = openProductDetail;
@@ -505,13 +638,21 @@ function initCatalogSearch() {
     applyCatalogFilters();
 }
 
-async function loadProducts() {
-    try {
-        const productsCollection = collection(db, "products");
-        const querySnapshot = await getDocs(productsCollection);
-        
-        const productsContainer = document.getElementById('products-container'); 
-        if(!productsContainer) return;
+function loadProducts() {
+    const productsContainer = document.getElementById('products-container'); 
+    if(!productsContainer) return;
+
+    productsContainer.innerHTML = `
+        <div class="catalog-no-results show" style="display:block; grid-column: 1 / -1;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span class="en-text">Loading products...</span>
+            <span class="ar-text">جاري تحميل المنتجات...</span>
+        </div>
+    `;
+
+    const productsCollection = collection(db, "products");
+
+    onSnapshot(productsCollection, (querySnapshot) => {
         
         let htmlString = '';
         let index = 0; 
@@ -531,9 +672,10 @@ async function loadProducts() {
             
             const tagsArray = product.tags || []; 
             const tagsString = tagsArray.join(' ').toLowerCase(); 
-            const hasSale = product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.price);
             const variants = getProductVariants(product);
             const displayPrice = Math.min(...variants.map(v => parseFloat(v.price || product.price || 0)));
+            const saleVariants = variants.filter(v => v.oldPrice && parseFloat(v.oldPrice) > parseFloat(v.price));
+            const hasSale = saleVariants.length > 0 || (product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.price));
             const searchableText = [
                 nameEn,
                 nameAr,
@@ -569,7 +711,21 @@ async function loadProducts() {
             let priceHtml = '';
             let saleBadgeHtml = ''; // شريط الخصم على الصورة
             
-            if (hasSale) {
+            if (saleVariants.length > 0) {
+                const lowestSale = saleVariants.reduce((best, item) => parseFloat(item.price) < parseFloat(best.price) ? item : best, saleVariants[0]);
+                priceHtml = `
+                    <div class="price" style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--forest-green, #2F5D3A); font-weight: bold;">${parseFloat(lowestSale.price).toFixed(2)} JD</span>
+                        <del style="color: #A09E98; font-size: 0.9rem;">${parseFloat(lowestSale.oldPrice).toFixed(2)} JD</del>
+                    </div>
+                `;
+                saleBadgeHtml = `
+                    <div style="position: absolute; top: 10px; right: 10px; background: #C6A43F; color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; font-weight: bold; z-index: 2;">
+                        <span class="en-text">SALE</span>
+                        <span class="ar-text">تخفيض</span>
+                    </div>
+                `;
+            } else if (hasSale) {
                 // إذا كان فيه خصم، اعرض السعر القديم مشطوب وجنبه السعر الجديد
                 priceHtml = `
                     <div class="price" style="display: flex; align-items: center; gap: 8px;">
@@ -642,12 +798,19 @@ async function loadProducts() {
 
         initCatalogSearch();
 
-    } catch (error) {
+    }, (error) => {
         console.error("خطأ في جلب المنتجات:", error);
-    }
+        productsContainer.innerHTML = `
+            <div class="catalog-no-results show" style="display:block; grid-column: 1 / -1;">
+                <span class="en-text">Could not load products. Please try again.</span>
+                <span class="ar-text">تعذر تحميل المنتجات، حاول مرة ثانية.</span>
+            </div>
+        `;
+    });
 }
 
 // تشغيل الدوال عند تحميل الصفحة
 recordVisit();
 listenToVisitorCount();
+listenAnnouncementBar();
 loadProducts();

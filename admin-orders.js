@@ -1,8 +1,9 @@
 import { app } from './firebase-config.js';
-import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(() => {});
 const auth = getAuth(app);
 
 // حماية الصفحة
@@ -23,6 +24,29 @@ const statusOptions = {
     "Cancelled": "ملغي"
 };
 
+const ORDERS_CACHE_KEY = 'zarinaAdminOrdersCacheV2';
+const ORDERS_CACHE_MAX_AGE = 1000 * 60 * 60 * 6;
+let unsubscribeOrders = null;
+
+function readOrdersCache() {
+    try {
+        const raw = localStorage.getItem(ORDERS_CACHE_KEY);
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || !Array.isArray(payload.items)) return null;
+        if (Date.now() - (payload.savedAt || 0) > ORDERS_CACHE_MAX_AGE) return null;
+        return payload.items;
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeOrdersCache(items) {
+    try {
+        localStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), items }));
+    } catch (error) {}
+}
+
 function itemOptionLabel(item) {
     return item.variantLabel || item.selectedVariant || item.optionLabel || '';
 }
@@ -31,12 +55,15 @@ function itemDisplayName(item) {
     return item.nameAr || item.nameEn || item.name || 'منتج';
 }
 
-async function loadOrders() {
-    try {
-        // بنجيب الطلبات مرتبة من الأحدث للأقدم
-        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-        const querySnapshot = await getDocs(q);
+function getOrderDate(order) {
+    const createdAt = order.createdAt;
+    if (!createdAt) return new Date();
+    if (typeof createdAt.toDate === 'function') return createdAt.toDate();
+    if (createdAt.seconds) return new Date(createdAt.seconds * 1000);
+    return new Date(createdAt);
+}
 
+function renderOrders(orderDocs) {
         let activeHtml = '';
         let completedHtml = '';
         
@@ -49,13 +76,12 @@ async function loadOrders() {
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
 
-        querySnapshot.forEach((docSnap) => {
-            const order = docSnap.data();
-            const orderId = docSnap.id;
+        orderDocs.forEach(({ id, data: order }) => {
+            const orderId = id;
             const shortId = orderId.substring(0, 6).toUpperCase();
             
             // تحويل وقت الفايربيس لتاريخ مقروء
-            const orderDate = order.createdAt ? order.createdAt.toDate() : new Date();
+            const orderDate = getOrderDate(order);
             const dateString = orderDate.toLocaleString('ar-JO', { dateStyle: 'short', timeStyle: 'short' });
             
             const isToday = orderDate >= startOfToday;
@@ -164,8 +190,6 @@ async function loadOrders() {
                 e.target.disabled = true;
                 try {
                     await updateDoc(doc(db, "orders", orderId), { status: newStatus });
-                    // إعادة تحميل الصفحة عشان ينقل الطلب للجدول الصح
-                    loadOrders(); 
                 } catch (error) {
                     alert("حدث خطأ أثناء تحديث حالة الطلب");
                     e.target.disabled = false;
@@ -190,10 +214,34 @@ async function loadOrders() {
             });
         });
 
-    } catch (error) {
-        console.error("Error loading orders: ", error);
-        document.getElementById('activeOrdersTable').innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">خطأ في جلب الطلبات</td></tr>';
+}
+
+function showOrdersError(error) {
+    console.error("Error loading orders: ", error);
+    document.getElementById('activeOrdersTable').innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">خطأ في جلب الطلبات</td></tr>';
+}
+
+function loadOrders() {
+    const cachedOrders = readOrdersCache();
+    if (cachedOrders) {
+        renderOrders(cachedOrders);
+    } else {
+        document.getElementById('activeOrdersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الطلبات...</td></tr>';
+        document.getElementById('completedOrdersTable').innerHTML = '<tr><td colspan="6" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الطلبات...</td></tr>';
     }
+
+    if (unsubscribeOrders) unsubscribeOrders();
+
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    unsubscribeOrders = onSnapshot(q, (querySnapshot) => {
+        const orders = [];
+        querySnapshot.forEach((docSnap) => {
+            orders.push({ id: docSnap.id, data: docSnap.data() });
+        });
+
+        writeOrdersCache(orders);
+        renderOrders(orders);
+    }, showOrdersError);
 }
 
 // دالة الطباعة الاحترافية

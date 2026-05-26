@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Browse Zarina collections by product group and choose natural products by available size and price.">
   <title>ZARINA · Collections</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="global.css">
   <style>
     .collections-hero {
@@ -355,23 +356,77 @@
         padding: 2.6rem 0 1.8rem;
       }
 
+      .collections-page {
+        padding-top: 1rem;
+      }
+
+      .collections-panel,
+      .collection-stage {
+        border-left: 0;
+        border-radius: 0;
+        border-right: 0;
+        margin-left: -18px;
+        margin-right: -18px;
+      }
+
+      .collections-panel {
+        padding: 0.85rem 18px;
+      }
+
+      .panel-title {
+        margin-bottom: 0.65rem;
+      }
+
+      .collections-list {
+        margin-left: -18px;
+        margin-right: -18px;
+        padding: 0 18px 4px;
+        scrollbar-width: none;
+      }
+
+      .collection-tab {
+        border-radius: 999px;
+        grid-template-columns: 34px 1fr auto;
+        min-height: 48px;
+        min-width: 220px;
+        padding: 7px 10px;
+      }
+
+      .collection-tab-img {
+        border-radius: 999px;
+        height: 34px;
+        width: 34px;
+      }
+
+      .collection-tab-meta {
+        display: none;
+      }
+
       .stage-hero,
       .stage-tools {
         grid-template-columns: 1fr;
       }
 
       .stage-image {
-        max-height: 240px;
+        display: none;
       }
 
       .products-area,
       .stage-hero,
       .stage-tools {
-        padding: 1rem;
+        padding: 1rem 18px;
       }
 
       .collections-grid {
         grid-template-columns: 1fr;
+      }
+
+      .stage-title {
+        font-size: 1.65rem;
+      }
+
+      .stage-copy {
+        display: none;
       }
     }
   </style>
@@ -463,6 +518,27 @@
   const root = document.getElementById('collectionsRoot');
   let collectionGroups = [];
   let activeIndex = 0;
+  const COLLECTIONS_CACHE_KEY = 'zarinaCollectionsPageCacheV2';
+  const COLLECTIONS_CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
+
+  function readPageCache() {
+    try {
+      const raw = localStorage.getItem(COLLECTIONS_CACHE_KEY);
+      if (!raw) return null;
+      const payload = JSON.parse(raw);
+      if (!payload || !Array.isArray(payload.collections) || !Array.isArray(payload.products)) return null;
+      if (Date.now() - (payload.savedAt || 0) > COLLECTIONS_CACHE_MAX_AGE) return null;
+      return payload;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writePageCache(collections, products) {
+    try {
+      localStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), collections, products }));
+    } catch (error) {}
+  }
 
   function text(value) {
     return (value || '').toString();
@@ -503,9 +579,11 @@
     const nameAr = product.nameAr || product.name || 'بدون اسم';
     const descEn = product.descEn || product.description || '';
     const descAr = product.descAr || product.description || '';
-    const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ price: product.price || 0 }];
+    const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ price: product.price || 0, oldPrice: product.oldPrice || null }];
     const price = Math.min(...variants.map(variant => parseFloat(variant.price || product.price || 0)));
-    const oldPrice = parseFloat(product.oldPrice || 0);
+    const saleVariants = variants.filter(variant => variant.oldPrice && parseFloat(variant.oldPrice) > parseFloat(variant.price || 0));
+    const saleVariant = saleVariants.sort((a, b) => parseFloat(a.price || 0) - parseFloat(b.price || 0))[0];
+    const oldPrice = saleVariant ? parseFloat(saleVariant.oldPrice || 0) : parseFloat(product.oldPrice || 0);
     const isSale = oldPrice > price;
     const priceHtml = isSale
       ? `<div class="price"><span>${price.toFixed(2)} JD</span> <del style="color:#A09E98;font-size:0.9rem;">${oldPrice.toFixed(2)} JD</del></div>`
@@ -654,12 +732,67 @@
     document.getElementById('noProductsMessage')?.classList.toggle('show', visible === 0);
   }
 
+  function renderCollectionsData(collectionItems, productItems) {
+      const groups = new Map();
+
+      collectionItems.forEach(({ data }) => {
+        const nameAr = text(data.nameAr || data.name || '').trim();
+        const nameEn = text(data.nameEn || '').trim();
+        const key = collectionKey(nameAr || nameEn);
+        if (!key) return;
+        groups.set(key, { nameAr, nameEn, products: [] });
+      });
+
+      productItems.forEach(({ id, data: product }) => {
+        if (product.isVisible === false) return;
+        window.zarinaProductsById = window.zarinaProductsById || {};
+        window.zarinaProductsById[id] = { id, ...product };
+
+        const groupName = collectionName(product);
+        if (!groupName) return;
+
+        const key = collectionKey(groupName);
+        if (!groups.has(key)) {
+          groups.set(key, { nameAr: groupName, nameEn: '', products: [] });
+        }
+        groups.get(key).products.push({ id, ...product });
+      });
+
+      collectionGroups = [...groups.values()]
+        .filter(group => group.products.length > 0)
+        .sort((a, b) => (a.nameAr || a.nameEn).localeCompare(b.nameAr || b.nameEn, 'ar'));
+
+      activeIndex = Math.min(activeIndex, Math.max(collectionGroups.length - 1, 0));
+
+      if (collectionGroups.length === 0) {
+        root.className = 'collection-empty';
+        root.innerHTML = '<span class="en-text">No collections yet.</span><span class="ar-text">ما في مجموعات حالياً.</span>';
+        return;
+      }
+
+      renderShell();
+  }
+
   async function loadCollectionsPage() {
     try {
+      const cached = readPageCache();
+      if (cached) {
+        renderCollectionsData(cached.collections, cached.products);
+      }
+
       const [collectionsSnap, productsSnap] = await Promise.all([
         getDocs(collection(db, "collections")),
         getDocs(collection(db, "products"))
       ]);
+
+      const freshCollections = [];
+      const freshProducts = [];
+      collectionsSnap.forEach(docSnap => freshCollections.push({ id: docSnap.id, data: docSnap.data() }));
+      productsSnap.forEach(docSnap => freshProducts.push({ id: docSnap.id, data: docSnap.data() }));
+
+      writePageCache(freshCollections, freshProducts);
+      renderCollectionsData(freshCollections, freshProducts);
+      return;
 
       const groups = new Map();
 
@@ -701,8 +834,10 @@
       renderShell();
     } catch (error) {
       console.error("Collections error:", error);
-      root.className = 'collection-empty';
-      root.innerHTML = '<span class="en-text">Could not load collections.</span><span class="ar-text">تعذر تحميل المجموعات.</span>';
+      if (!collectionGroups.length) {
+        root.className = 'collection-empty';
+        root.innerHTML = '<span class="en-text">Could not load collections.</span><span class="ar-text">تعذر تحميل المجموعات.</span>';
+      }
     }
   }
 

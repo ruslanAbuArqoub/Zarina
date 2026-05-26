@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Zarina offers natural raw ingredients, oils, butters, herbs, and ready products with clear sizes and prices.">
   <title>Zarina Raw Ingredients | Natural Apothecary</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   
   <link rel="stylesheet" href="global.css">
@@ -19,80 +20,288 @@
       --transition-smooth: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     }
 
-    /* Hero section (unique to this page) */
+    /* Hero section */
     .hero {
-      height: 80vh;
-      background-image: url('https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=1920&q=80');
+      min-height: min(720px, calc(100svh - var(--header-height) - 54px));
+      background-image:
+        linear-gradient(90deg, rgba(20, 38, 25, 0.82) 0%, rgba(30, 58, 42, 0.66) 42%, rgba(252, 248, 240, 0.3) 100%),
+        url('https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=1920&q=80');
       background-size: cover;
       background-position: center;
-      padding: 5rem 1rem;
-      text-align: center;
+      color: #FFFEF9;
+      display: flex;
+      align-items: center;
       position: relative;
       overflow: hidden;
-      margin-bottom: 2rem;
       border-bottom: 1px solid rgba(198, 164, 63, 0.3);
     }
-    .hero::before {
-      content: "🌿";
-      font-size: 200px;
-      opacity: 0.04;
+
+    .hero::after {
+      content: '';
       position: absolute;
-      bottom: -30px;
-      right: -20px;
+      inset: auto 0 0;
+      height: 120px;
+      background: linear-gradient(180deg, rgba(252,248,240,0), var(--warm-beige));
       pointer-events: none;
-      transform: rotate(-15deg);
     }
-    .hero-content {
+
+    .hero-inner {
       position: relative;
       z-index: 2;
+      width: 100%;
+      padding: 4.5rem 0 5rem;
+    }
+
+    .hero-content {
+      max-width: 760px;
       animation: fadeUp 0.9s ease-out;
     }
-    .hero h1 {
-      font-size: 3.8rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #2A5C38, #C6A43F);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
+
+    .hero-kicker {
+      align-items: center;
+      background: rgba(255, 254, 249, 0.14);
+      border: 1px solid rgba(255, 254, 249, 0.28);
+      border-radius: 999px;
+      color: #F7E8BD;
+      display: inline-flex;
+      gap: 8px;
+      font-weight: 800;
       margin-bottom: 1rem;
-      letter-spacing: -0.01em;
+      padding: 8px 14px;
     }
+
+    .hero h1 {
+      color: #FFFEF9;
+      font-size: clamp(2.7rem, 6.4vw, 5.7rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      max-width: 780px;
+      text-shadow: 0 12px 34px rgba(0,0,0,0.28);
+    }
+
     .hero p {
-      font-size: 1.2rem;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-      color: #3B3A36;
+      color: rgba(255, 254, 249, 0.9);
+      font-size: 1.15rem;
+      line-height: 1.8;
+      max-width: 660px;
+      margin: 0 0 1.6rem;
     }
-    .hero-btn {
-      background: var(--deep-forest);
-      color: var(--cream);
-      border: none;
-      padding: 12px 32px;
-      font-weight: 600;
-      border-radius: 40px;
-      transition: var(--transition-smooth);
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 1.8rem;
+    }
+
+    .hero-btn,
+    .hero-link {
+      align-items: center;
+      border-radius: 999px;
       cursor: pointer;
+      display: inline-flex;
       font-family: inherit;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      font-weight: 800;
+      gap: 10px;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 22px;
+      text-decoration: none;
+      transition: var(--transition-smooth);
     }
-    .hero-btn:hover {
+
+    .hero-btn {
       background: var(--gold);
-      color: #1F2E1C;
-      transform: translateY(-4px);
-      box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+      border: 1px solid var(--gold);
+      color: #1F1E1A;
+      box-shadow: 0 14px 32px rgba(0,0,0,0.18);
+    }
+
+    .hero-link {
+      background: rgba(255, 254, 249, 0.13);
+      border: 1px solid rgba(255, 254, 249, 0.34);
+      color: #FFFEF9;
+    }
+
+    .hero-btn:hover,
+    .hero-link:hover {
+      transform: translateY(-3px);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(110px, 1fr));
+      gap: 10px;
+      max-width: 560px;
+    }
+
+    .hero-stat {
+      background: rgba(255, 254, 249, 0.12);
+      border: 1px solid rgba(255, 254, 249, 0.25);
+      border-radius: 18px;
+      padding: 0.9rem 1rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-stat strong {
+      color: #F7E8BD;
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .hero-stat span {
+      color: rgba(255, 254, 249, 0.86);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .trust-strip {
+      background: #FFFEF9;
+      border-bottom: 1px solid #EADBC6;
+      box-shadow: 0 12px 24px rgba(47, 93, 58, 0.05);
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+    }
+
+    .trust-item {
+      align-items: center;
+      display: flex;
+      gap: 12px;
+      min-height: 86px;
+      padding: 1rem;
+    }
+
+    .trust-item i {
+      align-items: center;
+      background: #FCF8F0;
+      border: 1px solid #EADBC6;
+      border-radius: 14px;
+      color: var(--forest-green);
+      display: inline-flex;
+      height: 44px;
+      justify-content: center;
+      width: 44px;
+    }
+
+    .trust-item strong {
+      color: var(--forest-green);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .trust-item small {
+      color: #6A6256;
+      display: block;
+      margin-top: 3px;
+    }
+
+    .home-section {
+      padding: 3.3rem 0;
+    }
+
+    .section-heading {
+      align-items: end;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: space-between;
+      margin-bottom: 1.4rem;
+    }
+
+    .section-heading h2 {
+      color: var(--forest-green);
+      margin: 0;
+    }
+
+    .section-heading p {
+      color: #6A6256;
+      margin: 0;
+      max-width: 560px;
+    }
+
+    .intention-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .intention-card {
+      background: #FFFEF9;
+      border: 1px solid #EADBC6;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      color: inherit;
+      cursor: pointer;
+      display: grid;
+      gap: 0.75rem;
+      min-height: 190px;
+      overflow: hidden;
+      padding: 1.1rem;
+      position: relative;
+      text-align: inherit;
+      transition: 0.25s ease;
+      width: 100%;
+    }
+
+    .intention-card::before {
+      background: linear-gradient(135deg, rgba(47,93,58,0.12), rgba(198,164,63,0.18));
+      content: '';
+      inset: 0;
+      position: absolute;
+    }
+
+    .intention-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .intention-card i {
+      align-items: center;
+      background: var(--forest-green);
+      border-radius: 16px;
+      color: #FFFEF9;
+      display: inline-flex;
+      font-size: 1.2rem;
+      height: 48px;
+      justify-content: center;
+      width: 48px;
+    }
+
+    .intention-card h3 {
+      color: var(--forest-green);
+      font-size: 1.35rem;
+      margin: 0;
+    }
+
+    .intention-card p {
+      color: #5D554A;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .intention-card:hover {
+      border-color: rgba(198,164,63,0.85);
+      transform: translateY(-5px);
     }
 
     /* Products section */
     .products-section {
-      padding: 3rem 0 5rem;
+      padding: 2rem 0 5rem;
     }
     .section-title {
       text-align: center;
       font-size: 2.5rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 0.8rem;
       position: relative;
       display: inline-block;
       width: 100%;
+      color: var(--forest-green);
     }
     .section-title:after {
       content: '';
@@ -111,7 +320,7 @@
     /* product cards */
     .product-card {
       background: white;
-      border-radius: 24px;
+      border-radius: 18px;
       overflow: hidden;
       transition: var(--transition-smooth);
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
@@ -126,7 +335,7 @@
     }
     .product-img {
       width: 100%;
-      height: 220px;
+      height: 240px;
       object-fit: cover;
       transition: transform 0.5s ease;
     }
@@ -189,12 +398,97 @@
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
-      .hero h1 { font-size: 2.4rem; }
-      .section-title { font-size: 2rem; }
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-inner {
+        padding: 3rem 0 3.5rem;
+      }
+
+      .hero h1 { font-size: 2.45rem; }
       .products-grid { gap: 1.2rem; }
+
+      .hero-stats,
+      .trust-grid,
+      .intention-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
     }
+
     @media (max-width: 480px) {
-      .hero { padding: 3rem 1rem; }
+      .hero {
+        background-image:
+          linear-gradient(180deg, rgba(20, 38, 25, 0.9) 0%, rgba(30, 58, 42, 0.78) 68%, rgba(252, 248, 240, 0.1) 100%),
+          url('https://images.unsplash.com/photo-1617897903246-719242758050?auto=format&fit=crop&w=1200&q=80');
+      }
+
+      .hero-inner {
+        padding: 2.2rem 0 2.6rem;
+      }
+
+      .hero-kicker {
+        font-size: 0.82rem;
+        margin-bottom: 0.75rem;
+        padding: 7px 12px;
+      }
+
+      .hero h1 {
+        font-size: 2.15rem;
+        line-height: 1.08;
+      }
+
+      .hero p {
+        font-size: 0.98rem;
+        line-height: 1.65;
+        margin-bottom: 1.1rem;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        gap: 9px;
+        margin-bottom: 1rem;
+      }
+
+      .hero-btn,
+      .hero-link {
+        min-height: 44px;
+        width: 100%;
+      }
+
+      .hero-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .hero-stat {
+        border-radius: 14px;
+        padding: 0.65rem 0.45rem;
+        text-align: center;
+      }
+
+      .hero-stat strong {
+        font-size: 1rem;
+      }
+
+      .hero-stat span {
+        font-size: 0.72rem;
+        line-height: 1.25;
+      }
+
+      .trust-grid,
+      .intention-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .trust-item {
+        min-height: auto;
+      }
     }
     
     .product-category {
@@ -270,26 +564,128 @@
 
 <main>
   <section class="hero">
-    <div class="hero-content">
-      <h1>
-        <span class="en-text">Zarina Raw Ingredients</span>
-        <span class="ar-text">زارينا للمواد الأولية</span>
-      </h1>
-      <p>
-        <span class="en-text">Ancient wisdom · Wildcrafted botanicals · Cold-pressed oils</span>
-        <span class="ar-text">حكمة الأجداد · أعشاب بريّة · زيوت طبيعية عصرة أولى</span>
-      </p>
-      <button class="hero-btn" id="shopNowBtn">
-        <span class="en-text">Explore collection <i class="fas fa-leaf"></i></span>
-        <span class="ar-text">تصفح مجموعتنا <i class="fas fa-leaf"></i></span>
-      </button>
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <div class="hero-kicker">
+          <i class="fas fa-seedling"></i>
+          <span class="en-text">Raw botanical apothecary</span>
+          <span class="ar-text">عطارة طبيعية بمواد خام نقية</span>
+        </div>
+        <h1>
+          <span class="en-text">Pure ingredients for everyday rituals</span>
+          <span class="ar-text">مواد طبيعية نقية لروتينك اليومي</span>
+        </h1>
+        <p>
+          <span class="en-text">Choose butters, oils, herbs, and blends by need, size, and budget. Every product opens with its available weights and prices.</span>
+          <span class="ar-text">اختار الزبدات، الزيوت، الأعشاب والخلطات حسب حاجتك والوزن المناسب إلك، وكل منتج بيوضح الأحجام والأسعار قبل الإضافة للسلة.</span>
+        </p>
+        <div class="hero-actions">
+          <button class="hero-btn" id="shopNowBtn">
+            <span class="en-text">Shop products <i class="fas fa-arrow-down"></i></span>
+            <span class="ar-text">تسوق المنتجات <i class="fas fa-arrow-down"></i></span>
+          </button>
+          <a class="hero-link" href="Collections.html">
+            <span class="en-text">Browse collections <i class="fas fa-layer-group"></i></span>
+            <span class="ar-text">تصفح المجموعات <i class="fas fa-layer-group"></i></span>
+          </a>
+        </div>
+        <div class="hero-stats" aria-label="Store highlights">
+          <div class="hero-stat">
+            <strong id="homeProductCount">0</strong>
+            <span class="en-text">available products</span>
+            <span class="ar-text">منتج متوفر</span>
+          </div>
+          <div class="hero-stat">
+            <strong id="homeCategoryCount">0</strong>
+            <span class="en-text">natural categories</span>
+            <span class="ar-text">تصنيف طبيعي</span>
+          </div>
+          <div class="hero-stat">
+            <strong>JD</strong>
+            <span class="en-text">clear size pricing</span>
+            <span class="ar-text">أسعار حسب الحجم</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <div class="container products-section">
+  <section class="trust-strip" aria-label="Why shop with Zarina">
+    <div class="container trust-grid">
+      <div class="trust-item">
+        <i class="fas fa-weight-hanging"></i>
+        <div>
+          <strong><span class="en-text">Choose your size</span><span class="ar-text">اختار الحجم</span></strong>
+          <small><span class="en-text">Weights and prices are clear.</span><span class="ar-text">الأوزان والأسعار واضحة.</span></small>
+        </div>
+      </div>
+      <div class="trust-item">
+        <i class="fas fa-leaf"></i>
+        <div>
+          <strong><span class="en-text">Natural focus</span><span class="ar-text">طبيعي ونقي</span></strong>
+          <small><span class="en-text">Oils, butters, herbs, blends.</span><span class="ar-text">زيوت، زبدات، أعشاب وخلطات.</span></small>
+        </div>
+      </div>
+      <div class="trust-item">
+        <i class="fas fa-search"></i>
+        <div>
+          <strong><span class="en-text">Fast search</span><span class="ar-text">بحث سريع</span></strong>
+          <small><span class="en-text">Filter products in seconds.</span><span class="ar-text">فلتر المنتجات بثواني.</span></small>
+        </div>
+      </div>
+      <div class="trust-item">
+          <i class="fas fa-shopping-bag"></i>
+        <div>
+          <strong><span class="en-text">Easy checkout</span><span class="ar-text">طلب سهل</span></strong>
+          <small><span class="en-text">Your selections stay visible.</span><span class="ar-text">اختياراتك بتضل واضحة.</span></small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="container">
+      <div class="section-heading">
+        <div>
+          <h2>
+            <span class="en-text">Shop by intention</span>
+            <span class="ar-text">تسوق حسب حاجتك</span>
+          </h2>
+        </div>
+        <p>
+          <span class="en-text">Quick paths for the most common rituals, built on the same product filters below.</span>
+          <span class="ar-text">اختصارات سريعة لأكثر الاستخدامات طلباً، ومربوطة مباشرة بفلاتر المنتجات تحت.</span>
+        </p>
+      </div>
+      <div class="intention-grid">
+        <button type="button" class="intention-card" data-home-filter="skin">
+          <i class="fas fa-spa"></i>
+          <h3><span class="en-text">Skin care</span><span class="ar-text">العناية بالبشرة</span></h3>
+          <p><span class="en-text">Butters, oils, and raw bases for soft daily care.</span><span class="ar-text">زبدات وزيوت وخامات مناسبة للعناية اليومية.</span></p>
+        </button>
+        <button type="button" class="intention-card" data-home-filter="hair">
+          <i class="fas fa-droplet"></i>
+          <h3><span class="en-text">Hair care</span><span class="ar-text">العناية بالشعر</span></h3>
+          <p><span class="en-text">Natural oils and blends for scalp and ends.</span><span class="ar-text">زيوت وخلطات طبيعية للفروة والأطراف.</span></p>
+        </button>
+        <button type="button" class="intention-card" data-home-filter="relaxation">
+          <i class="fas fa-moon"></i>
+          <h3><span class="en-text">Relaxation</span><span class="ar-text">استرخاء</span></h3>
+          <p><span class="en-text">Calming aromas and ritual-friendly botanicals.</span><span class="ar-text">روائح هادئة ونباتات مناسبة للروتين الليلي.</span></p>
+        </button>
+        <button type="button" class="intention-card" data-home-filter="sale">
+          <i class="fas fa-tags"></i>
+          <h3><span class="en-text">Offers</span><span class="ar-text">العروض</span></h3>
+          <p><span class="en-text">See discounted picks when they are available.</span><span class="ar-text">شوف المنتجات المخفضة أول ما تتوفر.</span></p>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="container products-section" id="shopProducts">
     <h2 class="section-title">
-      <span class="en-text">From earth, with intention</span>
-      <span class="ar-text">من قلب الطبيعة، صُنعناهم بحُب</span>
+      <span class="en-text">Fresh from the apothecary</span>
+      <span class="ar-text">مختارات زارينا الطبيعية</span>
     </h2>
     <section class="catalog-tools" aria-label="Product search and filters">
       <div class="catalog-search-row">
@@ -384,6 +780,9 @@
 
 <script>
   const shopNowBtn = document.getElementById('shopNowBtn');
+  const productsContainer = document.getElementById('products-container');
+  const homeProductCount = document.getElementById('homeProductCount');
+  const homeCategoryCount = document.getElementById('homeCategoryCount');
   
   function scrollToProducts() {
     const productsSection = document.querySelector('.products-section');
@@ -394,6 +793,40 @@
   
   if (shopNowBtn) {
     shopNowBtn.addEventListener('click', scrollToProducts);
+  }
+
+  function updateHomeStats() {
+    if (!productsContainer) return;
+
+    const cards = Array.from(productsContainer.querySelectorAll('.product-card'));
+    const categorySet = new Set();
+
+    cards.forEach(card => {
+      const tags = (card.dataset.tags || '').toLowerCase();
+      ['skin', 'hair', 'relaxation', 'sale'].forEach(tag => {
+        if (tags.includes(tag)) categorySet.add(tag);
+      });
+    });
+
+    if (homeProductCount) homeProductCount.textContent = cards.length;
+    if (homeCategoryCount) homeCategoryCount.textContent = categorySet.size || 4;
+  }
+
+  document.querySelectorAll('[data-home-filter]').forEach(card => {
+    card.addEventListener('click', () => {
+      const filter = card.dataset.homeFilter;
+      const filterButton = document.querySelector(`.catalog-filter-btn[data-filter="${filter}"]`);
+      scrollToProducts();
+      if (filterButton) {
+        setTimeout(() => filterButton.click(), 260);
+      }
+    });
+  });
+
+  if (productsContainer) {
+    const observer = new MutationObserver(updateHomeStats);
+    observer.observe(productsContainer, { childList: true });
+    updateHomeStats();
   }
 </script>
 </body>
