@@ -1,0 +1,261 @@
+<script type="module">
+  // 🔥 لاحظ التعديل: تم إضافة updateDoc, doc, increment
+  import { app } from './firebase-config.js';
+  import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+  const db = getFirestore(app);
+  let cart = [];
+  let orderTotalAmount = 0;
+  const DELIVERY_FEE = 3.00; 
+  
+  // متغيرات كود الخصم
+  let discountValue = 0;
+  let appliedPromoCode = "";
+
+  function loadCartAndRender() {
+    const saved = localStorage.getItem('zarinaCart');
+    if (saved) {
+      try {
+        cart = JSON.parse(saved);
+      } catch(e) { cart = []; }
+    } else {
+      cart = [];
+    }
+    renderOrderSummary();
+  }
+
+  function renderOrderSummary() {
+    const container = document.getElementById('orderItemsList');
+    const totalSpan = document.getElementById('mainCheckoutTotal');
+    if (!container) return;
+
+    if (!cart || cart.length === 0) {
+      container.innerHTML = `
+        <p style="color: #7B6E58;">
+          <span class="en-text">Your cart is empty. </span>
+          <span class="ar-text">سلتك فاضية. </span>
+        </p>
+      `;
+      if (totalSpan) totalSpan.innerText = '0.00 JD';
+      const btn = document.getElementById('submitBtn');
+      if(btn) btn.disabled = true;
+      return;
+    }
+
+    let itemsHtml = '';
+    let subtotal = 0;
+    
+    cart.forEach(item => {
+      const itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+      
+      const nameEn = item.nameEn || item.name || 'Unnamed';
+      const nameAr = item.nameAr || item.name || 'بدون اسم';
+
+      itemsHtml += `
+        <div class="summary-item">
+          <div class="summary-details">
+            <strong>
+              <span class="en-text">${escapeHtml(nameEn)}</span>
+              <span class="ar-text">${escapeHtml(nameAr)}</span>
+            </strong> 
+            <span style="color: #7B6E58; margin: 0 4px;">x ${item.quantity}</span>
+          </div>
+          <div style="font-weight: 600;">${itemTotal.toFixed(2)} JD</div>
+        </div>
+      `;
+    });
+    
+    itemsHtml += `
+      <div class="summary-item" style="border-top: 1px dashed #EADBC6; margin-top: 10px; padding-top: 10px; color: var(--forest-green, #2F5D3A);">
+        <div class="summary-details">
+          <i class="fas fa-truck" style="margin: 0 5px;"></i>
+          <span class="en-text">Delivery Fee</span>
+          <span class="ar-text">رسوم التوصيل</span>
+        </div>
+        <div style="font-weight: 600;">${DELIVERY_FEE.toFixed(2)} JD</div>
+      </div>
+    `;
+
+    // عرض الخصم إذا كان موجود
+    if (discountValue > 0) {
+        itemsHtml += `
+          <div class="summary-item" style="color: #C94C4C;">
+            <div class="summary-details">
+              <i class="fas fa-tags" style="margin: 0 5px;"></i>
+              <span class="en-text">Discount (${appliedPromoCode})</span>
+              <span class="ar-text">الخصم (${appliedPromoCode})</span>
+            </div>
+            <div style="font-weight: 600;">-${discountValue.toFixed(2)} JD</div>
+          </div>
+        `;
+    }
+
+    // المجموع النهائي (المنتجات + التوصيل - الخصم)
+    let finalTotal = (subtotal + DELIVERY_FEE) - discountValue;
+    if (finalTotal < 0) finalTotal = 0; // عشان ما يصير المجموع بالسالب
+    
+    orderTotalAmount = finalTotal;
+    
+    container.innerHTML = itemsHtml;
+    if (totalSpan) totalSpan.innerText = `${orderTotalAmount.toFixed(2)} JD`;
+  }
+
+  // --- نظام فحص كود الخصم المطور ---
+applyPromoBtn.addEventListener('click', async () => {
+    const codeInput = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+    if(!codeInput) return;
+
+    applyPromoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    applyPromoBtn.disabled = true;
+
+    try {
+        const q = query(collection(db, "promoCodes"), where("code", "==", codeInput));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            promoMessage.style.color = "#C94C4C";
+            promoMessage.innerHTML = '<span class="en-text">Invalid code</span><span class="ar-text">الكود غير صحيح</span>';
+        } else {
+            let docRef;
+            let codeData;
+            querySnapshot.forEach((doc) => {
+                docRef = doc.ref;
+                codeData = doc.data();
+            });
+
+            // 1. فحص التاريخ
+            const today = new Date();
+            const expiryDate = new Date(codeData.expiryDate);
+
+            // 2. فحص عدد مرات الاستخدام
+            if (codeData.isActive === false) {
+                promoMessage.style.color = "#C94C4C";
+                promoMessage.innerHTML = '<span class="en-text">Code deactivated</span><span class="ar-text">الكود موقوف</span>';
+            } else if (today > expiryDate) {
+                promoMessage.style.color = "#C94C4C";
+                promoMessage.innerHTML = '<span class="en-text">Code expired</span><span class="ar-text">الكود منتهي الصلاحية</span>';
+            } else if (codeData.usedCount >= codeData.maxUsage) {
+                promoMessage.style.color = "#C94C4C";
+                promoMessage.innerHTML = '<span class="en-text">Code usage limit reached</span><span class="ar-text">تم الوصول للحد الأقصى لاستخدام الكود</span>';
+            } else {
+                // الكود شغال!
+                discountValue = codeData.discountAmount;
+                appliedPromoCode = codeInput;
+                promoMessage.style.color = "var(--forest-green, #2F5D3A)";
+                promoMessage.innerHTML = `<span class="en-text">Applied!</span><span class="ar-text">تم تطبيق الخصم بنجاح!</span>`;
+            }
+        }
+    } catch (error) {
+        console.error("خطأ:", error);
+    }
+    applyPromoBtn.innerHTML = '<span class="en-text">Apply</span><span class="ar-text">تطبيق</span>';
+    applyPromoBtn.disabled = false;
+    renderOrderSummary();
+});
+  
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  const phoneInput = document.getElementById('phone');
+  const phoneError = document.getElementById('phoneError');
+  const jordanPhoneRegex = /^07[789]\d{7}$/;
+
+  phoneInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (val.length > 0 && !jordanPhoneRegex.test(val)) {
+      phoneError.style.display = 'block';
+    } else {
+      phoneError.style.display = 'none';
+    }
+  });
+
+  const form = document.getElementById('checkoutForm');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (cart.length === 0) {
+        alert('Your cart is empty. Please add some items before checkout.\nسلتك فاضية، ضيف منتجات قبل ما تكمل طلبك.');
+        return;
+      }
+
+      const phone = phoneInput.value.trim();
+      if (!jordanPhoneRegex.test(phone)) {
+        phoneError.style.display = 'block';
+        phoneInput.focus();
+        return; 
+      }
+      
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const fullName = `${firstName} ${lastName}`;
+      const city = document.getElementById('city').value;
+      const address = document.getElementById('address').value.trim();
+      const orderNotes = document.getElementById('orderNotes').value.trim(); 
+      const paymentMethod = document.getElementById('cod').value;
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="en-text">Processing...</span><span class="ar-text">جاري المعالجة...</span>';
+      submitBtn.disabled = true;
+
+                // زيادة عداد استخدام الكود في الفايربيس
+   if (appliedPromoCode) {
+    const q = query(collection(db, "promoCodes"), where("code", "==", appliedPromoCode));
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach(async (docSnap) => {
+        await updateDoc(doc(db, "promoCodes", docSnap.id), {
+            usedCount: increment(1)
+        });
+    });
+  
+  }
+
+      try {
+        await addDoc(collection(db, "orders"), {
+          customerName: fullName,
+          customerPhone: phone,
+          customerCity: city, 
+          customerAddress: address,
+          orderNotes: orderNotes, 
+          paymentMethod: paymentMethod,
+          deliveryFee: DELIVERY_FEE,
+          promoCodeUsed: appliedPromoCode, // توثيق الكود المستخدم (إذا فيه)
+          discountAmount: discountValue, // توثيق قيمة الخصم
+          items: cart, 
+          totalAmount: orderTotalAmount, 
+          status: "Pending", 
+          createdAt: serverTimestamp() 
+        });
+
+        localStorage.removeItem('zarinaCart');
+        
+        const modal = document.getElementById('successModal');
+        document.getElementById('modalNameEn').innerText = firstName;
+        document.getElementById('modalNameAr').innerText = firstName;
+        modal.classList.add('show');
+
+        document.getElementById('modalCloseBtn').addEventListener('click', () => {
+          window.location.href = 'Zindex.html'; 
+        });
+
+      } catch (error) {
+        console.error("Error adding order: ", error);
+        alert("Failed to send order. Please check your internet connection and try again.\nفشل إرسال الطلب. تأكد من اتصالك بالإنترنت وجرب مرة ثانية.");
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  loadCartAndRender();
+</script>
