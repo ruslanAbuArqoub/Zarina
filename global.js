@@ -6,13 +6,25 @@
     // ---------- 0. LANGUAGE TOGGLE LOGIC ----------
     const langToggle = document.getElementById('langToggle');
     let currentLang = localStorage.getItem('zarinaLang') || 'ar'; // خلينا العربي الأساسي
+    const savedTheme = localStorage.getItem('zarinaTheme') || 'light';
 
     function applyLanguage(lang) {
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }
 
+    function applyTheme(theme) {
+      const nextTheme = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = nextTheme;
+      const toggle = document.getElementById('themeToggleBtn');
+      if (toggle) {
+        toggle.setAttribute('aria-label', nextTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        toggle.innerHTML = nextTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+      }
+    }
+
     applyLanguage(currentLang);
+    applyTheme(savedTheme);
 
     if (langToggle) {
       langToggle.addEventListener('click', () => {
@@ -31,19 +43,30 @@
       const mobileCartIcon = document.getElementById('cartIconBtn');
       const navbar = hamburger.closest('.navbar');
       const mobileActions = document.createElement('div');
+      const themeToggle = document.createElement('button');
       mobileActions.className = 'mobile-header-actions';
       mobileActions.setAttribute('aria-label', 'Quick actions');
+      themeToggle.type = 'button';
+      themeToggle.id = 'themeToggleBtn';
+      themeToggle.className = 'theme-toggle';
 
       if (navbar) {
         navbar.insertBefore(mobileActions, hamburger);
       }
 
       function syncMobileHeaderActions() {
+        if (themeToggle.parentElement !== mobileActions) mobileActions.appendChild(themeToggle);
         if (langToggle && langToggle.parentElement !== mobileActions) mobileActions.appendChild(langToggle);
         if (mobileCartIcon && mobileCartIcon.parentElement !== mobileActions) mobileActions.appendChild(mobileCartIcon);
       }
 
       syncMobileHeaderActions();
+      applyTheme(localStorage.getItem('zarinaTheme') || 'light');
+      themeToggle.addEventListener('click', () => {
+        const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('zarinaTheme', nextTheme);
+        applyTheme(nextTheme);
+      });
       window.addEventListener('resize', syncMobileHeaderActions, { passive: true });
 
       const currentPage = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
@@ -318,12 +341,34 @@
 // ========== FIREBASE INTEGRATION ==========
 // ==========================================
 
+function escapeHtml(value) {
+    return (value ?? '').toString().replace(/[&<>"']/g, function(match) {
+        if (match === '&') return '&amp;';
+        if (match === '<') return '&lt;';
+        if (match === '>') return '&gt;';
+        if (match === '"') return '&quot;';
+        if (match === "'") return '&#39;';
+        return match;
+    });
+}
+
+function sanitizePlainText(value, maxLength) {
+    return (value ?? '')
+        .toString()
+        .replace(/[\u0000-\u001F\u007F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, maxLength);
+}
+
 import { app } from './firebase-config.js';
-import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot, enableIndexedDbPersistence, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch(() => {});
 window.zarinaProductsById = window.zarinaProductsById || {};
+window.zarinaReviewsByProduct = window.zarinaReviewsByProduct || {};
+window.zarinaLatestReviews = window.zarinaLatestReviews || [];
 const PRODUCTS_CACHE_KEY = 'zarinaProductsCacheV2';
 const PRODUCTS_CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
 const announcementDocRef = doc(db, 'site_data', 'announcement');
@@ -436,6 +481,192 @@ function getProductVariants(product) {
     }];
 }
 
+function reviewDateValue(review) {
+    const createdAt = review.createdAt;
+    if (!createdAt) return 0;
+    if (typeof createdAt.toDate === 'function') return createdAt.toDate().getTime();
+    if (createdAt.seconds) return createdAt.seconds * 1000;
+    const parsed = new Date(createdAt).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function getProductReviewStats(productId) {
+    const reviews = (window.zarinaReviewsByProduct?.[productId] || []).filter(review => review && typeof review === 'object');
+    if (!reviews.length) return { average: 0, count: 0, reviews: [] };
+    const total = reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0);
+    return {
+        average: total / reviews.length,
+        count: reviews.length,
+        reviews
+    };
+}
+
+function starsHtml(value = 0, compact = false) {
+    const rounded = Math.round((Number(value) || 0) * 2) / 2;
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        const icon = rounded >= i ? 'fas fa-star' : rounded >= i - 0.5 ? 'fas fa-star-half-alt' : 'far fa-star';
+        html += `<i class="${icon}"></i>`;
+    }
+    if (!compact && value > 0) html += `<strong>${Number(value).toFixed(1)}</strong>`;
+    return html;
+}
+
+function productAvailability(product) {
+    const variants = getProductVariants(product);
+    return variants.some(variant => variant.status !== 'out_of_stock')
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock';
+}
+
+function renderProductStructuredData() {
+    const products = Object.values(window.zarinaProductsById || {}).filter(product => product && product.isVisible !== false);
+    if (!products.length) return;
+    window.zarinaUpdateSeoProductKeywords?.(products);
+
+    const itemList = products.slice(0, 60).map((product, index) => {
+        const variants = getProductVariants(product);
+        const price = Math.min(...variants.map(variant => parseFloat(variant.price || product.price || 0))).toFixed(2);
+        const stats = getProductReviewStats(product.id);
+        const name = product.nameEn || product.nameAr || product.name || 'ZARINA product';
+        const description = product.descEn || product.descAr || product.description || `${name} from ZARINA natural apothecary.`;
+        const productSchema = {
+            '@type': 'Product',
+            name,
+            description,
+            image: product.imageUrl ? [product.imageUrl] : [],
+            brand: {
+                '@type': 'Brand',
+                name: 'ZARINA'
+            },
+            offers: {
+                '@type': 'Offer',
+                price,
+                priceCurrency: 'JOD',
+                availability: productAvailability(product),
+                url: `${window.location.origin}${window.location.pathname}#product-${product.id}`
+            }
+        };
+
+        if (stats.count > 0) {
+            productSchema.aggregateRating = {
+                '@type': 'AggregateRating',
+                ratingValue: Number(stats.average.toFixed(1)),
+                reviewCount: stats.count
+            };
+        }
+
+        return {
+            '@type': 'ListItem',
+            position: index + 1,
+            item: productSchema
+        };
+    });
+
+    let tag = document.getElementById('zarina-products-schema');
+    if (!tag) {
+        tag = document.createElement('script');
+        tag.type = 'application/ld+json';
+        tag.id = 'zarina-products-schema';
+        document.head.appendChild(tag);
+    }
+
+    tag.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'ZARINA products',
+        itemListElement: itemList
+    });
+}
+
+function renderProductRatingBadges() {
+    document.querySelectorAll('.product-rating-badge[data-product-id]').forEach(badge => {
+        const stats = getProductReviewStats(badge.dataset.productId);
+        badge.innerHTML = stats.count
+            ? `${starsHtml(stats.average, true)} <span>${stats.average.toFixed(1)} (${stats.count})</span>`
+            : `<i class="far fa-star"></i><span class="en-text">New</span><span class="ar-text">جديد</span>`;
+    });
+}
+
+function renderHomeReviewSection() {
+    const section = document.getElementById('homeReviewsSection');
+    const list = document.getElementById('homeReviewsList');
+    const avgEl = document.getElementById('homeReviewsAverage');
+    const countEl = document.getElementById('homeReviewsCount');
+    if (!section || !list) return;
+
+    const reviews = [...(window.zarinaLatestReviews || [])]
+        .filter(review => review.rating && review.text && review.showOnHome !== false)
+        .sort((a, b) => reviewDateValue(b) - reviewDateValue(a));
+
+    const totalRating = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+    const average = reviews.length ? totalRating / reviews.length : 0;
+    if (avgEl) avgEl.innerHTML = reviews.length ? starsHtml(average) : starsHtml(0, true);
+    if (countEl) {
+        countEl.innerHTML = reviews.length
+            ? `<span class="en-text">${reviews.length} customer notes</span><span class="ar-text">${reviews.length} رأي من الزبائن</span>`
+            : `<span class="en-text">Be the first voice</span><span class="ar-text">كن أول تقييم</span>`;
+    }
+
+    const featured = reviews.slice(0, 6);
+    if (!featured.length) {
+        list.innerHTML = `
+            <article class="home-review-empty">
+                <i class="fas fa-star"></i>
+                <strong class="en-text">Reviews will appear here after customers share their experience.</strong>
+                <strong class="ar-text">التقييمات رح تظهر هون أول ما الزبائن يشاركوا تجربتهم.</strong>
+            </article>
+        `;
+        return;
+    }
+
+    list.innerHTML = featured.map(review => {
+        const product = window.zarinaProductsById?.[review.productId] || {};
+        const productNameEn = product.nameEn || review.productNameEn || 'ZARINA product';
+        const productNameAr = product.nameAr || review.productNameAr || 'منتج من زارينا';
+        const customerName = review.customerName || 'ZARINA customer';
+        return `
+            <article class="home-review-card">
+                <div class="home-review-top">
+                    <div class="review-stars">${starsHtml(review.rating, true)}</div>
+                    <span>${escapeHtml(customerName)}</span>
+                </div>
+                <p>${escapeHtml(review.text)}</p>
+                <small>
+                    <span class="en-text">${escapeHtml(productNameEn)}</span>
+                    <span class="ar-text">${escapeHtml(productNameAr)}</span>
+                </small>
+            </article>
+        `;
+    }).join('');
+}
+
+window.zarinaReviewsByProduct = window.zarinaReviewsByProduct || {};
+window.zarinaLatestReviews = window.zarinaLatestReviews || [];
+
+const reviewsCollection = collection(db, "reviews");
+onSnapshot(reviewsCollection, (snapshot) => {
+    const grouped = {};
+    const latest = [];
+    snapshot.forEach(docSnap => {
+        const review = { id: docSnap.id, ...docSnap.data() };
+        if (!review.productId || review.isVisible === false) return;
+        if (!grouped[review.productId]) grouped[review.productId] = [];
+        grouped[review.productId].push(review);
+        latest.push(review);
+    });
+    Object.keys(grouped).forEach(productId => {
+        grouped[productId].sort((a, b) => reviewDateValue(b) - reviewDateValue(a));
+    });
+    window.zarinaReviewsByProduct = grouped;
+    window.zarinaLatestReviews = latest.sort((a, b) => reviewDateValue(b) - reviewDateValue(a));
+    renderProductRatingBadges();
+    renderHomeReviewSection();
+    renderProductStructuredData();
+}, () => {
+    renderHomeReviewSection();
+});
+
 function ensureProductModal() {
     let modal = document.getElementById('productDetailModal');
     if (modal) return modal;
@@ -443,6 +674,7 @@ function ensureProductModal() {
     modal = document.createElement('div');
     modal.id = 'productDetailModal';
     modal.className = 'product-modal-overlay';
+    modal.hidden = true;
     modal.innerHTML = `
       <div class="product-modal">
         <button class="product-modal-close" id="productModalClose"><i class="fas fa-times"></i></button>
@@ -456,29 +688,63 @@ function ensureProductModal() {
         style.id = 'productModalStyles';
         style.textContent = `
           .product-card { cursor: pointer; }
-          .product-modal-overlay { position: fixed; inset: 0; background: rgba(31,30,26,.62); backdrop-filter: blur(4px); z-index: 9998; display: none; align-items: center; justify-content: center; padding: 18px; }
+          .product-modal-overlay { position: fixed; inset: 0; background: rgba(31,30,26,.66); backdrop-filter: blur(5px); z-index: 9998; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 18px; scrollbar-width: none; }
+          .product-modal-overlay[hidden] { display: none !important; pointer-events: none !important; visibility: hidden !important; }
           .product-modal-overlay.show { display: flex; }
-          .product-modal { background: #FFFEF9; border: 1px solid #EADBC6; border-top: 5px solid var(--gold,#C6A43F); border-radius: 22px; width: min(920px, 96vw); max-height: 92dvh; overflow: auto; position: relative; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
-          .product-modal-close { position: absolute; top: 12px; inset-inline-end: 12px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #EADBC6; background: white; cursor: pointer; z-index: 2; }
-          .product-modal-grid { display: grid; grid-template-columns: minmax(260px, .9fr) minmax(0, 1fr); gap: 1.4rem; padding: 1.4rem; }
-          .product-modal-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 18px; border: 1px solid #EADBC6; }
+          .product-modal-overlay::-webkit-scrollbar { display: none; }
+          .product-modal { background: #FFFEF9; border: 1px solid #EADBC6; border-top: 5px solid var(--gold,#C6A43F); border-radius: 24px; width: min(1080px, 97vw); max-height: none; overflow: visible; position: relative; box-shadow: 0 28px 70px rgba(0,0,0,.28); margin: 0 auto; }
+          .product-modal-close { position: sticky; top: 12px; float: inline-end; margin: 12px 12px -52px 0; width: 42px; height: 42px; border-radius: 50%; border: 1px solid #EADBC6; background: white; cursor: pointer; z-index: 3; box-shadow: 0 8px 20px rgba(31,30,26,.12); }
+          .product-modal-grid { display: grid; grid-template-columns: minmax(300px, .88fr) minmax(0, 1.12fr); gap: 1.6rem; padding: 1.55rem; }
+          .product-modal-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 20px; border: 1px solid #EADBC6; box-shadow: 0 16px 34px rgba(31,30,26,.08); }
           .product-modal-title { color: var(--forest-green,#2F5D3A); font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 .5rem; }
           .product-modal-desc { color: #5C594F; line-height: 1.7; margin-bottom: 1rem; }
+          .product-modal-rating { align-items: center; background: linear-gradient(135deg, rgba(198,164,63,.18), #FCF8F0); border: 1px solid rgba(198,164,63,.55); border-radius: 999px; color: #6A6256; display: inline-flex; gap: 8px; margin-bottom: .8rem; padding: 9px 14px; font-weight: 900; box-shadow: 0 8px 18px rgba(198,164,63,.12); }
+          .review-stars, .product-modal-rating, .product-rating-badge { color: var(--gold,#C6A43F); }
+          .review-stars { display: inline-flex; gap: 3px; align-items: center; }
+          .review-stars strong { color: var(--forest-green,#2F5D3A); margin-inline-start: 6px; }
           .variant-options { display: grid; gap: 10px; margin: 1rem 0; }
-          .variant-option { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid #DCCFBC; background: white; border-radius: 14px; padding: 12px; cursor: pointer; font-family: inherit; text-align: inherit; }
-          .variant-option.active { border-color: var(--gold,#C6A43F); box-shadow: 0 0 0 2px rgba(198,164,63,.18); }
+          .variant-option { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid #DCCFBC; background: white; border-radius: 14px; padding: 12px; cursor: pointer; font-family: inherit; text-align: inherit; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+          .variant-option:hover { transform: translateY(-2px); border-color: rgba(198,164,63,.8); }
+          .variant-option.active { border-color: var(--gold,#C6A43F); box-shadow: 0 0 0 2px rgba(198,164,63,.18), 0 10px 20px rgba(198,164,63,.13); }
           .variant-option[disabled] { opacity: .48; cursor: not-allowed; }
           .detail-qty { display: flex; align-items: center; gap: 10px; margin: 1rem 0; }
           .detail-qty button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #DCCFBC; background: white; cursor: pointer; font-weight: 900; }
-          .detail-add { width: 100%; min-height: 48px; border: 0; border-radius: 999px; background: var(--gold,#C6A43F); color: white; font-weight: 900; cursor: pointer; }
+          .detail-add { width: 100%; min-height: 50px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--gold,#C6A43F), #AA862E); color: white; font-weight: 900; cursor: pointer; box-shadow: 0 12px 24px rgba(198,164,63,.22); }
           .detail-add:disabled { background: #bbb; cursor: not-allowed; }
-          @media (max-width: 720px) { .product-modal-grid { grid-template-columns: 1fr; padding: 1rem; } .product-modal-img { max-height: 320px; } }
+          .product-reviews-panel { grid-column: 1 / -1; background: linear-gradient(135deg, #1F1E1A 0%, #2F5D3A 54%, #7B6A2D 100%); border: 1px solid rgba(198,164,63,.52); border-radius: 22px; box-shadow: inset 0 1px 0 rgba(255,254,249,.16), 0 18px 34px rgba(31,30,26,.16); overflow:hidden; padding: 1.15rem; position: relative; }
+          .product-reviews-panel::before { background: radial-gradient(circle, rgba(255,254,249,.18), transparent 34%); content:''; height:220px; inset-inline-end:-70px; position:absolute; top:-90px; width:220px; }
+          .product-reviews-head { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom: 1rem; position:relative; z-index:1; }
+          .product-reviews-head h3 { color: #FFFEF9; margin: 0 0 .25rem; font-family: var(--font-ar,inherit); font-size: 1.22rem; }
+          .product-reviews-head p { color: rgba(255,254,249,.78); margin:0; font-size:.94rem; line-height:1.65; max-width: 660px; }
+          .product-reviews-head > .review-stars { background: rgba(255,254,249,.12); border:1px solid rgba(255,254,249,.18); border-radius:999px; color:#F2CE61; padding:10px 12px; white-space:nowrap; }
+          .product-review-form { background: rgba(255,254,249,.12); border: 1px solid rgba(255,254,249,.2); border-radius: 18px; display:grid; grid-template-columns: minmax(160px,.8fr) minmax(190px,.85fr) auto; gap:10px; margin-bottom: 1rem; padding: .85rem; position:relative; z-index:1; }
+          .review-prompt-strip { align-items:center; background: rgba(255,254,249,.1); border:1px solid rgba(255,254,249,.18); border-radius:14px; color: rgba(255,254,249,.86); display:flex; gap:10px; font-weight:800; grid-column: 1 / -1; line-height:1.5; padding:10px 12px; }
+          .review-prompt-strip i { color:#F2CE61; }
+          .product-review-form input, .product-review-form textarea { background: rgba(255,254,249,.96); border:1px solid rgba(234,219,198,.78); border-radius:13px; font-family:inherit; padding:12px 13px; }
+          .product-review-form textarea { grid-column: 1 / 3; min-height: 86px; resize: vertical; }
+          .rating-picker { align-items:center; background: rgba(255,254,249,.96); border:1px solid rgba(234,219,198,.78); border-radius:13px; display:flex; gap:2px; justify-content:center; padding: 0 8px; }
+          .rating-picker button { background:none; border:0; color:#D2C2A9; cursor:pointer; font-size:1.3rem; padding:5px; transition: color .16s ease, transform .16s ease, filter .16s ease; }
+          .rating-picker button.active, .rating-picker button:hover { color: #F2CE61; filter: drop-shadow(0 4px 8px rgba(242,206,97,.3)); transform: translateY(-2px) scale(1.08); }
+          .submit-review-btn { align-self:stretch; background:#C6A43F; border:0; border-radius:13px; color:#1F1E1A; cursor:pointer; font-weight:900; padding:0 18px; transition: transform .18s ease, background .18s ease; }
+          .submit-review-btn:hover { background:#F2CE61; transform: translateY(-2px); }
+          .product-review-list { display:grid; gap:10px; grid-template-columns: repeat(2,minmax(0,1fr)); }
+          .product-review-item { background: rgba(255,254,249,.96); border:1px solid rgba(234,219,198,.84); border-radius:16px; padding:13px; position:relative; z-index:1; transition: transform .18s ease, box-shadow .18s ease; }
+          .product-review-item:hover { box-shadow: 0 12px 24px rgba(31,30,26,.16); transform: translateY(-3px); }
+          .product-review-item p { color:#4A463E; line-height:1.65; margin:.45rem 0; }
+          .product-review-item small { color:#7B7367; font-weight:800; }
+          .product-rating-badge { align-items:center; display:inline-flex; gap:5px; font-size:.82rem; font-weight:900; margin-bottom:.5rem; }
+          .product-rating-badge span { color:#6A6256; }
+          @media (max-width: 720px) { .product-modal { width: 96vw; max-height: none; } .product-modal-grid { grid-template-columns: 1fr; padding: 1rem; } .product-modal-img { max-height: 320px; } .product-review-form, .product-review-list { grid-template-columns: 1fr; } .product-review-form textarea { grid-column: 1; } .submit-review-btn { min-height: 46px; } .product-reviews-head { flex-direction: column; } }
         `;
         document.head.appendChild(style);
     }
 
     function closeProductModal() {
         modal.classList.remove('show');
+        modal.hidden = true;
+        modal.dataset.productId = '';
+        const modalBody = modal.querySelector('#productModalBody');
+        if (modalBody) modalBody.innerHTML = '';
         document.body.style.overflow = '';
     }
 
@@ -490,6 +756,9 @@ function ensureProductModal() {
 }
 
 function openProductDetail(productId) {
+    const modalAlreadyOpen = document.getElementById('productDetailModal');
+    if (modalAlreadyOpen?.classList.contains('show') && modalAlreadyOpen.dataset.productId === String(productId)) return;
+
     const product = window.zarinaProductsById?.[productId];
     if (!product) return;
 
@@ -499,6 +768,8 @@ function openProductDetail(productId) {
     let qty = 1;
 
     const modal = ensureProductModal();
+    modal.hidden = false;
+    modal.dataset.productId = String(productId);
     const body = modal.querySelector('#productModalBody');
     const nameEn = product.nameEn || product.name || 'Unnamed';
     const nameAr = product.nameAr || product.name || 'بدون اسم';
@@ -508,11 +779,21 @@ function openProductDetail(productId) {
     function render() {
         const selected = variants[selectedIndex];
         const unavailable = selected.status === 'out_of_stock';
+        const reviewStats = getProductReviewStats(productId);
+        const recentReviews = reviewStats.reviews.slice(0, 4);
         body.innerHTML = `
           <div class="product-modal-grid">
-            <img class="product-modal-img" src="${escapeAttribute(product.imageUrl || 'https://placehold.co/700x700?text=ZARINA')}" alt="">
+            <img class="product-modal-img" src="${escapeAttribute(product.imageUrl || 'https://placehold.co/700x700?text=ZARINA')}" alt="${escapeAttribute(nameEn)} - ${escapeAttribute(nameAr)}" loading="eager" decoding="async">
             <div>
               <h2 class="product-modal-title"><span class="en-text">${escapeAttribute(nameEn)}</span><span class="ar-text">${escapeAttribute(nameAr)}</span></h2>
+              <div class="product-modal-rating">
+                <span class="review-stars">${starsHtml(reviewStats.average, true)}</span>
+                <span>
+                  ${reviewStats.count
+                    ? `<span class="en-text">${reviewStats.average.toFixed(1)} from ${reviewStats.count} reviews</span><span class="ar-text">${reviewStats.average.toFixed(1)} من ${reviewStats.count} تقييم</span>`
+                    : `<span class="en-text">No reviews yet</span><span class="ar-text">لسا ما في تقييمات</span>`}
+                </span>
+              </div>
               <p class="product-modal-desc"><span class="en-text">${escapeAttribute(descEn)}</span><span class="ar-text">${escapeAttribute(descAr)}</span></p>
               <div class="variant-options">
                 ${variants.map((variant, index) => `
@@ -535,6 +816,43 @@ function openProductDetail(productId) {
                 <span class="en-text">Add selected option</span>
                 <span class="ar-text">إضافة الخيار للسلة</span>
               </button>
+            </div>
+            <div class="product-reviews-panel">
+              <div class="product-reviews-head">
+                <div>
+                  <h3><span class="en-text">Customer ritual notes</span><span class="ar-text">ملاحظات وتجارب الزبائن</span></h3>
+                  <p><span class="en-text">Rate the texture, scent, and your honest experience.</span><span class="ar-text">قيّم القوام والرائحة والتجربة بصراحة، عشان تساعد غيرك يختار بثقة.</span></p>
+                </div>
+                <div class="review-stars">${starsHtml(reviewStats.average)}</div>
+              </div>
+              <form class="product-review-form" id="productReviewForm">
+                <div class="review-prompt-strip">
+                  <i class="fas fa-star"></i>
+                  <span class="en-text">Your note helps the next customer choose the right size and texture.</span>
+                  <span class="ar-text">ملاحظتك بتساعد الزبون اللي بعدك يختار الحجم والقوام المناسب.</span>
+                </div>
+                <input type="text" id="reviewerName" maxlength="40" placeholder="اسمك / Your name" required>
+                <div class="rating-picker" id="ratingPicker" aria-label="Rating">
+                  ${[1,2,3,4,5].map(star => `<button type="button" data-rating="${star}" aria-label="${star} stars"><i class="fas fa-star"></i></button>`).join('')}
+                </div>
+                <button type="submit" class="submit-review-btn"><span class="en-text">Send</span><span class="ar-text">إرسال</span></button>
+                <textarea id="reviewText" maxlength="420" placeholder="اكتب تجربتك مع المنتج... / Write your experience..." required></textarea>
+              </form>
+              <div class="product-review-list">
+                ${recentReviews.length ? recentReviews.map(review => `
+                  <article class="product-review-item">
+                    <div class="review-stars">${starsHtml(review.rating, true)}</div>
+                    <p>${escapeHtml(review.text || '')}</p>
+                    <small>${escapeHtml(review.customerName || 'ZARINA customer')}</small>
+                  </article>
+                `).join('') : `
+                  <article class="product-review-item">
+                    <div class="review-stars">${starsHtml(0, true)}</div>
+                    <p><span class="en-text">Be the first to leave a note for this product.</span><span class="ar-text">كن أول شخص يترك تجربة لهالمنتج.</span></p>
+                    <small>ZARINA</small>
+                  </article>
+                `}
+              </div>
             </div>
           </div>
         `;
@@ -560,14 +878,121 @@ function openProductDetail(productId) {
             modal.classList.remove('show');
             document.body.style.overflow = '';
         });
+
+        let selectedRating = 5;
+        const ratingButtons = body.querySelectorAll('#ratingPicker button');
+        const paintStars = () => {
+            ratingButtons.forEach(btn => btn.classList.toggle('active', Number(btn.dataset.rating) <= selectedRating));
+        };
+        ratingButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedRating = Number(btn.dataset.rating) || 5;
+                paintStars();
+            });
+        });
+        paintStars();
+
+        body.querySelector('#productReviewForm')?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const submitBtn = form.querySelector('.submit-review-btn');
+            const customerName = sanitizePlainText(form.querySelector('#reviewerName')?.value, 40);
+            const text = sanitizePlainText(form.querySelector('#reviewText')?.value, 420);
+            const safeRating = Math.min(5, Math.max(1, parseInt(selectedRating, 10) || 5));
+            if (customerName.length < 2 || text.length < 5) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            let reviewSaved = false;
+            try {
+                const optimisticReview = {
+                    productId,
+                    productNameEn: nameEn,
+                    productNameAr: nameAr,
+                    customerName,
+                    text,
+                    rating: safeRating,
+                    isVisible: true,
+                    showOnHome: true,
+                    createdAt: new Date().toISOString()
+                };
+                await addDoc(reviewsCollection, {
+                    ...optimisticReview,
+                    createdAt: serverTimestamp()
+                });
+                window.zarinaReviewsByProduct = window.zarinaReviewsByProduct || {};
+                window.zarinaLatestReviews = window.zarinaLatestReviews || [];
+                window.zarinaReviewsByProduct[productId] = [optimisticReview, ...(window.zarinaReviewsByProduct[productId] || [])];
+                window.zarinaLatestReviews = [optimisticReview, ...(window.zarinaLatestReviews || [])];
+                showToast('<span class="en-text">Review added. Thank you.</span><span class="ar-text">وصل تقييمك، شكراً إلك.</span>');
+                renderProductRatingBadges();
+                renderHomeReviewSection();
+                reviewSaved = true;
+            } catch (error) {
+                console.error('Review save error:', error);
+                showToast('<span class="en-text">Could not save review.</span><span class="ar-text">ما قدرنا نحفظ التقييم حالياً.</span>');
+            } finally {
+                if (reviewSaved) {
+                    render();
+                } else if (submitBtn?.isConnected) {
+                    submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="en-text">Send</span><span class="ar-text">إرسال</span>';
+                }
+            }
+        });
     }
 
-    render();
+    try {
+        render();
+    } catch (error) {
+        console.error('Product detail render error:', error, { productId, product });
+        modal.classList.remove('show');
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        showToast('<span class="en-text">Could not open product details.</span><span class="ar-text">ما قدرنا نفتح تفاصيل المنتج حالياً.</span>');
+        return;
+    }
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
 }
 
 window.openProductDetail = openProductDetail;
+
+function bindProductDetailDelegation() {
+    if (window.zarinaProductDetailDelegationBound) return;
+    window.zarinaProductDetailDelegationBound = true;
+
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.firecart-btn, .collection-add-btn, .product-card');
+        if (!trigger) return;
+        if (trigger.closest('#productDetailModal') || trigger.closest('.cart-sidebar')) return;
+
+        const productId = trigger.dataset.id || trigger.dataset.productId;
+        if (!productId) return;
+
+        event.preventDefault();
+        openProductDetail(productId);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        const card = event.target.closest('.product-card[data-product-id]');
+        if (!card || event.target.closest('button, a, input, textarea, select')) return;
+        event.preventDefault();
+        openProductDetail(card.dataset.productId);
+    });
+
+    document.addEventListener('error', (event) => {
+        const image = event.target;
+        if (!(image instanceof HTMLImageElement)) return;
+        if (!image.classList.contains('product-img') && !image.classList.contains('product-modal-img') && !image.classList.contains('collection-tab-img') && !image.classList.contains('stage-image')) return;
+        if (image.dataset.fallbackApplied === 'true') return;
+        image.dataset.fallbackApplied = 'true';
+        image.src = 'https://placehold.co/700x700?text=ZARINA';
+    }, true);
+}
+
+bindProductDetailDelegation();
 
 function initCatalogSearch() {
     const productsContainer = document.getElementById('products-container');
@@ -665,6 +1090,7 @@ function loadProducts() {
             
             const nameEn = product.nameEn || product.name || 'Unnamed';
             const nameAr = product.nameAr || product.name || 'بدون اسم';
+            const imageAlt = `${nameEn} - ${nameAr} | ZARINA natural product`;
             const descEn = product.descEn || product.description || '';
             const descAr = product.descAr || product.description || '';
             const catEn = product.categoryEn || product.category || 'RAW INGREDIENTS';
@@ -746,9 +1172,9 @@ function loadProducts() {
             }
 
             htmlString += `
-                <div class="product-card" data-product-id="${docSnap.id}" data-index="${index}" data-price="${escapeAttribute(displayPrice)}" data-name="${escapeAttribute(nameEn)}" data-tags="${escapeAttribute(filterTags)}" data-search="${escapeAttribute(searchableText)}" style="animation-delay: ${index * 0.05}s; position: relative;">
+                <div class="product-card" id="product-${escapeAttribute(docSnap.id)}" role="button" tabindex="0" aria-label="${escapeAttribute(`Open ${nameEn} product details`)}" data-product-id="${docSnap.id}" data-index="${index}" data-price="${escapeAttribute(displayPrice)}" data-name="${escapeAttribute(nameEn)}" data-tags="${escapeAttribute(filterTags)}" data-search="${escapeAttribute(searchableText)}" style="animation-delay: ${index * 0.05}s; position: relative;">
                     ${saleBadgeHtml}
-                    <img class="product-img" src="${product.imageUrl}" alt="product img" loading="lazy">
+                    <img class="product-img" src="${escapeAttribute(product.imageUrl || 'https://placehold.co/600x420?text=ZARINA')}" alt="${escapeAttribute(imageAlt)}" loading="lazy" decoding="async">
                     <div class="product-info">
                         
                         <div class="product-title">
@@ -762,6 +1188,11 @@ function loadProducts() {
                         </div>
                         
                         ${tagsHtml}
+                        <div class="product-rating-badge" data-product-id="${docSnap.id}">
+                            <i class="far fa-star"></i>
+                            <span class="en-text">New</span>
+                            <span class="ar-text">جديد</span>
+                        </div>
                         
                         <div class="product-desc">
                             <span class="en-text">${descEn}</span>
@@ -782,6 +1213,9 @@ function loadProducts() {
         });
 
         productsContainer.innerHTML = htmlString;
+        renderProductRatingBadges();
+        renderHomeReviewSection();
+        renderProductStructuredData();
 
         const addBtns = productsContainer.querySelectorAll('.firecart-btn');
         addBtns.forEach(btn => {

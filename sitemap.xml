@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/</loc>
+    <priority>1.0</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/Apothecary.html</loc>
+    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+  </url>
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/Collections.html</loc>
+    <priority>0.85</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/About.html</loc>
+    <priority>0.65</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/OURstory.html</loc>
+    <priority>0.65</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://zarinastore-cc94b.web.app/CountactUS.html</loc>
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+</urlset>

@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email in [
+          'googgermal@gmail.com',
+          'katia-abu-arqoub@admin.zarina'
+        ];
+    }
+
+    function isText(value, min, max) {
+      return value is string
+        && value.size() >= min
+        && value.size() <= max;
+    }
+
+    function isMoney(value) {
+      return value is number && value >= 0 && value <= 10000;
+    }
+
+    function validOrder() {
+      return request.resource.data.keys().hasOnly([
+          'customerName',
+          'customerPhone',
+          'customerCity',
+          'customerAddress',
+          'orderNotes',
+          'paymentMethod',
+          'deliveryFee',
+          'promoCodeUsed',
+          'discountAmount',
+          'items',
+          'totalAmount',
+          'status',
+          'createdAt'
+        ])
+        && isText(request.resource.data.customerName, 2, 120)
+        && request.resource.data.customerPhone.matches('^07[789][0-9]{7}$')
+        && isText(request.resource.data.customerCity, 1, 80)
+        && isText(request.resource.data.customerAddress, 5, 220)
+        && isText(request.resource.data.orderNotes, 0, 350)
+        && request.resource.data.paymentMethod == 'COD'
+        && isMoney(request.resource.data.deliveryFee)
+        && isMoney(request.resource.data.discountAmount)
+        && request.resource.data.items is list
+        && request.resource.data.items.size() >= 1
+        && request.resource.data.items.size() <= 30
+        && isMoney(request.resource.data.totalAmount)
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validReview() {
+      return request.resource.data.keys().hasOnly([
+          'productId',
+          'productNameEn',
+          'productNameAr',
+          'customerName',
+          'text',
+          'rating',
+          'isVisible',
+          'showOnHome',
+          'source',
+          'createdAt'
+        ])
+        && isText(request.resource.data.productId, 1, 160)
+        && isText(request.resource.data.productNameEn, 0, 140)
+        && isText(request.resource.data.productNameAr, 0, 140)
+        && isText(request.resource.data.customerName, 2, 40)
+        && isText(request.resource.data.text, 5, 420)
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.isVisible == true
+        && request.resource.data.showOnHome == true
+        && request.resource.data.createdAt == request.time;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /collections/{collectionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow create: if validOrder();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if validReview();
+      allow update, delete: if isAdmin();
+    }
+
+    match /site_data/stats {
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).changedKeys().hasOnly(['visits'])
+        && request.resource.data.visits is int
+        && request.resource.data.visits == resource.data.visits + 1;
+      allow create, delete: if isAdmin();
+    }
+
+    match /site_data/announcement {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

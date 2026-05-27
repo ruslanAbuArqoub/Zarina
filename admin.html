@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>ZARINA · Admin Dashboard</title>
-  
+  <link rel="icon" type="image/png" href="zarina-logo-mark.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   
@@ -422,6 +423,32 @@
       border-color: var(--gold, #C6A43F);
       box-shadow: 0 0 0 3px rgba(198, 164, 63, 0.15);
     }
+    .admin-image-upload-preview {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px dashed #D9CBB5;
+      border-radius: 14px;
+      background: #FFFEF9;
+    }
+    .admin-image-upload-preview.active {
+      display: flex;
+    }
+    .admin-image-upload-preview img {
+      width: 74px;
+      height: 74px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid #EADBC6;
+    }
+    .admin-image-upload-preview span {
+      color: #6A6256;
+      font-size: .86rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
     .btn-submit {
       width: 100%;
       background: var(--gold, #C6A43F);
@@ -727,6 +754,7 @@
     <nav class="admin-nav">
       <a href="admin.html" class="active"><i class="fas fa-box"></i> المنتجات</a>
       <a href="admin-orders.html"><i class="fas fa-shopping-cart"></i> الطلبات</a>
+      <a href="admin-reviews.html"><i class="fas fa-star"></i> التقييمات</a>
       <a href="index.html"><i class="fas fa-home"></i> الرئيسية</a>
     </nav>
 
@@ -919,8 +947,14 @@
             <small style="color: #666; font-size: 0.8rem;">اتركه فارغاً إذا لم يكن هناك خصم</small>
           </div>
           <div class="form-group">
-            <label>رابط الصورة (URL) - imageUrl</label>
-            <input type="url" id="prodImg" class="form-control" placeholder="https://..." required>
+            <label>صورة المنتج</label>
+            <input type="file" id="prodImgFile" class="form-control" accept="image/*" required>
+            <div id="prodImgPreviewWrap" class="admin-image-upload-preview">
+              <img id="prodImgPreview" src="https://placehold.co/160x160?text=ZARINA" alt="Product image preview">
+              <span>معاينة الصورة قبل رفعها.</span>
+            </div>
+            <input type="url" id="prodImg" class="form-control" placeholder="رابط احتياطي اختياري إذا كانت الصورة مرفوعة مسبقاً" style="margin-top: 8px;">
+            <small class="collection-note">ارفع صورة من جهازك مباشرة على Firebase Storage. الحد الأقصى 5MB.</small>
           </div>
           <div class="form-group">
             <label>التاجات - tags (اكتبها بالإنجليزي وافصل بمسافة)</label>

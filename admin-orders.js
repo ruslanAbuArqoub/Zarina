@@ -5,10 +5,14 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch(() => {});
 const auth = getAuth(app);
+const ADMIN_EMAILS = ['googgermal@gmail.com', 'katia-abu-arqoub@admin.zarina'];
 
 // حماية الصفحة
 onAuthStateChanged(auth, (user) => {
-    if (!user) window.location.href = 'login.html';
+    if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+        if (user) signOut(auth);
+        window.location.href = 'login.html';
+    }
 });
 
 document.getElementById('btnLogout')?.addEventListener('click', () => {

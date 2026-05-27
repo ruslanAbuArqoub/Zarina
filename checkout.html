@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="Complete your Zarina order and review selected products, sizes, prices, and delivery details.">
+  <meta name="robots" content="noindex, nofollow">
   <title>ZARINA · Checkout</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-  
+  <link rel="icon" type="image/png" href="zarina-logo-mark.png">
   <link rel="stylesheet" href="global.css">
   
   <style>
@@ -742,6 +743,12 @@
   const phoneInput = document.getElementById('phone');
   const phoneError = document.getElementById('phoneError');
   const jordanPhoneRegex = /^07[789]\d{7}$/;
+  const cleanText = (value, maxLength) => (value || '')
+    .toString()
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
 
   phoneInput.addEventListener('input', (e) => {
     const val = e.target.value.trim();
@@ -769,13 +776,18 @@
         return; 
       }
       
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
+      const firstName = cleanText(document.getElementById('firstName').value, 40);
+      const lastName = cleanText(document.getElementById('lastName').value, 40);
       const fullName = `${firstName} ${lastName}`;
-      const city = document.getElementById('city').value;
-      const address = document.getElementById('address').value.trim();
-      const orderNotes = document.getElementById('orderNotes').value.trim(); 
+      const city = cleanText(document.getElementById('city').value, 80);
+      const address = cleanText(document.getElementById('address').value, 220);
+      const orderNotes = cleanText(document.getElementById('orderNotes').value, 350); 
       const paymentMethod = document.getElementById('cod').value;
+
+      if (firstName.length < 2 || lastName.length < 2 || !city || address.length < 5) {
+        alert('تأكد من الاسم والمدينة والعنوان قبل تأكيد الطلب.');
+        return;
+      }
       
       const submitBtn = document.getElementById('submitBtn');
       const originalText = submitBtn.innerHTML;
@@ -783,17 +795,21 @@
       submitBtn.disabled = true;
 
       // 🔥 زيادة عداد استخدام الكود في الكولكشن الجديد
-      if (appliedPromoCode) {
-          const q = query(collection(db, "coupons"), where("code", "==", appliedPromoCode));
-          const querySnapshot = await getDocs(q);
-          querySnapshot.forEach(async (docSnap) => {
-              await updateDoc(doc(db, "coupons", docSnap.id), {
-                  usedCount: increment(1)
-              });
-          });
-      }
-
       try {
+        if (appliedPromoCode) {
+          try {
+            const q = query(collection(db, "coupons"), where("code", "==", appliedPromoCode));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(async (docSnap) => {
+              await updateDoc(doc(db, "coupons", docSnap.id), {
+                usedCount: increment(1)
+              });
+            });
+          } catch (couponError) {
+            console.warn('Coupon usage counter was not updated:', couponError);
+          }
+        }
+
         await addDoc(collection(db, "orders"), {
           customerName: fullName,
           customerPhone: phone,

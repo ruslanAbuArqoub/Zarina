@@ -1,21 +1,60 @@
 // ========== admin.js ==========
 
 import { app } from './firebase-config.js';
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, setDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, setDoc, onSnapshot, enableIndexedDbPersistence, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch(() => {});
 const auth = getAuth(app);
+const storage = getStorage(app);
+const ADMIN_EMAILS = ['googgermal@gmail.com', 'katia-abu-arqoub@admin.zarina'];
 const productsCol = collection(db, "products");
 const collectionsCol = collection(db, "collections");
 const ordersCol = collection(db, "orders");
 const statsDocRef = doc(db, 'site_data', 'stats');
 const announcementDocRef = doc(db, 'site_data', 'announcement');
+const PRODUCT_IMAGE_FALLBACK = 'https://placehold.co/320x320?text=ZARINA';
+const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024;
+
+function makeSafeFileName(value) {
+    return (value || 'product-image')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\u0600-\u06FF._-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 70) || 'product-image';
+}
+
+function validateProductImageFile(file) {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+        throw new Error('اختر ملف صورة فقط.');
+    }
+    if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+        throw new Error('حجم الصورة كبير. الحد الأقصى 5MB.');
+    }
+}
+
+async function uploadProductImage(file, productKey = 'product') {
+    validateProductImageFile(file);
+    const extension = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const cleanName = makeSafeFileName(file.name).replace(/\.[^.]+$/, '');
+    const imageRef = ref(storage, `product-images/${makeSafeFileName(productKey)}-${Date.now()}-${cleanName}.${extension}`);
+    const snapshot = await uploadBytes(imageRef, file, {
+        contentType: file.type,
+        customMetadata: { area: 'admin-products' }
+    });
+    return getDownloadURL(snapshot.ref);
+}
 
 // 🔥 كود الحماية
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
+    if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+        if (user) signOut(auth);
         window.location.href = 'login.html';
     }
 });
@@ -383,12 +422,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 background: var(--gold, #C6A43F); border-color: var(--gold, #C6A43F); color: white;
             }
             .modal-hint { color: #666; display: block; font-size: 0.85rem; line-height: 1.5; margin-top: 8px; }
+            .modal-image-group { grid-column: 1 / -1; }
+            .modal-image-preview { align-items:center; background:linear-gradient(135deg,#FCF8F0,#fffdf8); border:1px solid #EADBC6; border-radius:18px; display:grid; grid-template-columns:112px 1fr; gap:16px; margin-top:10px; padding:14px; }
+            .modal-image-preview img { width:112px; height:112px; border-radius:16px; object-fit:cover; border:1px solid #EADBC6; background:#fff; box-shadow:0 10px 24px rgba(70,52,22,.12); }
+            .modal-image-copy { display:grid; gap:8px; }
+            .modal-image-copy strong { color:#2F5D3A; font-size:1rem; }
+            .modal-image-copy span { color:#6A6256; font-size:.88rem; font-weight:700; line-height:1.45; }
+            .image-upload-card input[type="file"] { background:#fff; border-style:dashed; cursor:pointer; }
+            .upload-progress { color:#9E7E1B; display:block; font-size:.84rem; font-weight:800; min-height:1.2em; }
             .modal-variants { background:#FCF8F0; border:1px solid #EADBC6; border-radius:14px; padding:1rem; margin-top:1rem; overflow-x:auto; }
             .modal-variants .variant-row { grid-template-columns: minmax(150px, 1.15fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) minmax(130px, 0.9fr) auto; }
             .modal-variants .form-control { padding: 10px 12px; }
             @media (max-width: 720px) {
                 .zarina-modal { width: min(96vw, 620px); padding: 1.2rem; }
                 #editPriceForm { grid-template-columns: 1fr; }
+                .modal-image-preview { grid-template-columns: 1fr; }
+                .modal-image-preview img { width:100%; height:180px; }
                 .modal-variants .variant-row { grid-template-columns: 1fr; }
                 .modal-actions { flex-direction: column; }
             }
@@ -399,8 +448,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalHTML = `
             <div id="priceEditModal" class="zarina-modal-overlay">
                 <div class="zarina-modal">
-                    <h3><i class="fas fa-tags"></i> تعديل سعر المنتج</h3>
+                    <h3><i class="fas fa-tags"></i> تعديل بيانات المنتج</h3>
                     <form id="editPriceForm">
+                        <div class="form-group modal-image-group">
+                            <label>صورة المنتج</label>
+                            <div class="modal-image-preview image-upload-card">
+                                <img id="modalImagePreview" src="https://placehold.co/320x320?text=ZARINA" alt="Product image preview">
+                                <div class="modal-image-copy">
+                                    <strong>ارفع صورة جديدة من جهازك</strong>
+                                    <span>اتركها فارغة إذا بدك تخلي الصورة الحالية. الحد الأقصى 5MB.</span>
+                                    <input type="file" id="modalImageFile" class="form-control" accept="image/*">
+                                    <input type="hidden" id="modalImageUrl">
+                                    <small id="modalImageUploadStatus" class="upload-progress"></small>
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>السعر الأساسي / الحالي (JD) *</label>
                             <input type="number" step="0.01" id="modalCurrentPrice" class="form-control" required>
@@ -497,9 +559,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPrice = document.getElementById('modalCurrentPrice').value;
             const oldPriceStr = document.getElementById('modalOldPrice').value;
             const newOldPrice = oldPriceStr.trim() !== "" ? parseFloat(oldPriceStr) : null;
+            let imageUrl = document.getElementById('modalImageUrl').value.trim();
+            const imageFile = document.getElementById('modalImageFile')?.files?.[0];
             const variants = collectVariants('modalVariantsList');
 
             try {
+                if (imageFile) {
+                    const uploadStatus = document.getElementById('modalImageUploadStatus');
+                    if (uploadStatus) uploadStatus.textContent = 'جاري رفع الصورة...';
+                    imageUrl = await uploadProductImage(imageFile, currentEditingProdId);
+                    if (uploadStatus) uploadStatus.textContent = 'تم رفع الصورة بنجاح.';
+                }
+
                 const docRef = doc(db, "products", currentEditingProdId);
                 await updateDoc(docRef, {
                     price: parseFloat(newPrice),
@@ -507,7 +578,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     longDescAr: document.getElementById('modalLongDescAr').value.trim(),
                     longDescEn: document.getElementById('modalLongDescEn').value.trim(),
                     unitType: document.getElementById('modalUnitType').value,
-                    variants: variants
+                    imageUrl: imageUrl,
+                    variants: variants,
+                    updatedAt: serverTimestamp()
                 });
                 closeModal();
                 loadProductsToTable(); // تحديث الجدول مباشرة
@@ -537,7 +610,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await updateDoc(doc(db, "products", currentEditingProdId), {
                     collectionName: collectionName,
-                    collectionSlug: collectionName ? slugifyCollectionName(collectionName) : ''
+                    collectionSlug: collectionName ? slugifyCollectionName(collectionName) : '',
+                    updatedAt: serverTimestamp()
                 });
 
                 closeCollectionModal();
@@ -891,6 +965,33 @@ function writeAdminCache(key, items) {
         document.getElementById('modalCurrentPrice').value = currentPrice;
         document.getElementById('modalOldPrice').value = (oldPrice && oldPrice !== 'null') ? oldPrice : '';
         const product = allProducts.find(item => item.id === id)?.data || {};
+        const imageInput = document.getElementById('modalImageUrl');
+        const imageFileInput = document.getElementById('modalImageFile');
+        const imagePreview = document.getElementById('modalImagePreview');
+        const uploadStatus = document.getElementById('modalImageUploadStatus');
+        imageInput.value = product.imageUrl || '';
+        imagePreview.src = product.imageUrl || PRODUCT_IMAGE_FALLBACK;
+        if (imageFileInput) imageFileInput.value = '';
+        if (uploadStatus) uploadStatus.textContent = '';
+        if (imageFileInput) {
+            imageFileInput.onchange = () => {
+                const file = imageFileInput.files?.[0];
+                if (!file) {
+                    imagePreview.src = imageInput.value || PRODUCT_IMAGE_FALLBACK;
+                    return;
+                }
+                try {
+                    validateProductImageFile(file);
+                    imagePreview.src = URL.createObjectURL(file);
+                    if (uploadStatus) uploadStatus.textContent = 'الصورة جاهزة للرفع عند الحفظ.';
+                } catch (error) {
+                    alert(error.message);
+                    imageFileInput.value = '';
+                    imagePreview.src = imageInput.value || PRODUCT_IMAGE_FALLBACK;
+                    if (uploadStatus) uploadStatus.textContent = '';
+                }
+            };
+        };
         document.getElementById('modalLongDescAr').value = product.longDescAr || '';
         document.getElementById('modalLongDescEn').value = product.longDescEn || '';
         document.getElementById('modalUnitType').value = product.unitType || 'g';
@@ -1050,6 +1151,28 @@ function writeAdminCache(key, items) {
 
     // --- 4. إضافة منتج جديد ---
     const addForm = document.getElementById('addProductForm');
+    const prodImgFileInput = document.getElementById('prodImgFile');
+    if (prodImgFileInput) {
+        prodImgFileInput.addEventListener('change', () => {
+            const file = prodImgFileInput.files?.[0];
+            const previewWrap = document.getElementById('prodImgPreviewWrap');
+            const previewImg = document.getElementById('prodImgPreview');
+            if (!file) {
+                if (previewWrap) previewWrap.classList.remove('active');
+                return;
+            }
+            try {
+                validateProductImageFile(file);
+                if (previewImg) previewImg.src = URL.createObjectURL(file);
+                if (previewWrap) previewWrap.classList.add('active');
+            } catch (error) {
+                alert(error.message);
+                prodImgFileInput.value = '';
+                if (previewWrap) previewWrap.classList.remove('active');
+            }
+        });
+    }
+
     addForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -1060,6 +1183,8 @@ function writeAdminCache(key, items) {
         const oldPriceValue = oldPriceInput.trim() !== "" ? parseFloat(oldPriceInput) : null;
         const collectionName = document.getElementById('prodCollection').value.trim();
         const variants = collectVariants('productVariantsList');
+        const imageFile = document.getElementById('prodImgFile')?.files?.[0];
+        let imageUrl = document.getElementById('prodImg').value.trim();
 
         const newProduct = {
             nameAr: document.getElementById('prodNameAr').value,
@@ -1076,9 +1201,11 @@ function writeAdminCache(key, items) {
             variants: variants,
             price: parseFloat(document.getElementById('prodPrice').value),
             oldPrice: oldPriceValue,
-            imageUrl: document.getElementById('prodImg').value,
+            imageUrl: '',
             tags: tagsArray,
-            isVisible: true 
+            isVisible: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
         };
 
         try {
@@ -1090,10 +1217,20 @@ function writeAdminCache(key, items) {
                 await ensureCollectionExists(collectionName);
             }
 
+            if (imageFile) {
+                imageUrl = await uploadProductImage(imageFile, newProduct.nameEn || newProduct.nameAr || 'new-product');
+            }
+
+            if (!imageUrl) {
+                throw new Error('اختر صورة للمنتج أو أضف رابط صورة احتياطي.');
+            }
+
+            newProduct.imageUrl = imageUrl;
             await addDoc(productsCol, newProduct);
             
             alert("تم إضافة المنتج للمتجر بنجاح! 🎉");
             addForm.reset(); 
+            document.getElementById('prodImgPreviewWrap')?.classList.remove('active');
             renderVariants('productVariantsList');
             loadProductsToTable(); 
 
@@ -1101,7 +1238,12 @@ function writeAdminCache(key, items) {
             submitBtn.disabled = false;
         } catch (error) {
             console.error("خطأ:", error);
-            alert("حدث خطأ أثناء إضافة المنتج!");
+            alert(error.message || "حدث خطأ أثناء إضافة المنتج!");
+            const submitBtn = addForm.querySelector('.btn-submit');
+            if (submitBtn) {
+                submitBtn.innerText = "حفظ وإضافة للمتجر";
+                submitBtn.disabled = false;
+            }
         }
     });
 

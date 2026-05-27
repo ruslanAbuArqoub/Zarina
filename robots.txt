@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin-orders.html
+Disallow: /admin-reviews.html
+Disallow: /login.html
+Disallow: /checkout.html
+
+Sitemap: https://zarinastore-cc94b.web.app/sitemap.xml

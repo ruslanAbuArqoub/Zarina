@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Zarina offers natural raw ingredients, oils, butters, herbs, and ready products with clear sizes and prices.">
-  <title>Zarina Raw Ingredients | Natural Apothecary</title>
+  <meta name="description" content="Shop Zarina natural raw ingredients, botanical oils, body butters, herbs, and apothecary essentials in Jordan with clear sizes and prices.">
+  <title>ZARINA | Natural Raw Ingredients, Oils, Butters & Herbs in Jordan</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  
+  <link rel="icon" type="image/png" href="zarina-logo-mark.png">
   <link rel="stylesheet" href="global.css">
   
   <style>
@@ -290,6 +290,106 @@
       transform: translateY(-5px);
     }
 
+    .reviews-showcase {
+      background:
+        radial-gradient(circle at 12% 18%, rgba(198,164,63,0.14), transparent 30%),
+        linear-gradient(135deg, #1F1E1A 0%, #2F5D3A 58%, #6F813F 100%);
+      color: #FFFEF9;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .reviews-showcase::after {
+      border: 1px solid rgba(255,254,249,0.18);
+      border-radius: 999px;
+      content: '';
+      height: 360px;
+      inset-inline-end: -120px;
+      position: absolute;
+      top: -150px;
+      width: 360px;
+    }
+
+    .reviews-shell {
+      display: grid;
+      gap: 1.4rem;
+      grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.5fr);
+      position: relative;
+      z-index: 1;
+    }
+
+    .reviews-score {
+      align-content: center;
+      border-inline-start: 4px solid var(--gold);
+      display: grid;
+      gap: 0.85rem;
+      padding-inline-start: 1.2rem;
+    }
+
+    .reviews-score h2 {
+      color: #FFFEF9;
+      margin: 0;
+    }
+
+    .reviews-score p,
+    .reviews-score small {
+      color: rgba(255,254,249,0.78);
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    .reviews-score .review-stars {
+      color: #F2CE61;
+      font-size: 1.35rem;
+    }
+
+    .home-reviews-list {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .home-review-card,
+    .home-review-empty {
+      background: rgba(255,254,249,0.12);
+      border: 1px solid rgba(255,254,249,0.22);
+      border-radius: 18px;
+      min-height: 190px;
+      padding: 1rem;
+    }
+
+    .home-review-top {
+      align-items: center;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .home-review-card .review-stars {
+      color: #F2CE61;
+    }
+
+    .home-review-card p {
+      color: rgba(255,254,249,0.9);
+      line-height: 1.7;
+      margin: 0 0 1rem;
+    }
+
+    .home-review-card small,
+    .home-review-top span {
+      color: rgba(255,254,249,0.72);
+      font-weight: 800;
+    }
+
+    .home-review-empty {
+      align-items: center;
+      display: grid;
+      grid-column: 1 / -1;
+      justify-items: center;
+      text-align: center;
+    }
+
     /* Products section */
     .products-section {
       padding: 2rem 0 5rem;
@@ -419,6 +519,11 @@
         align-items: flex-start;
         flex-direction: column;
         gap: 0.5rem;
+      }
+
+      .reviews-shell,
+      .home-reviews-list {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -725,6 +830,35 @@
       <span class="ar-text">ما في منتجات مطابقة للبحث حالياً.</span>
     </div>
   </div>
+
+  <section class="home-section reviews-showcase" id="homeReviewsSection">
+    <div class="container reviews-shell">
+      <div class="reviews-score">
+        <div id="homeReviewsAverage" class="review-stars">
+          <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+        </div>
+        <h2>
+          <span class="en-text">What customers felt, not just what they bought</span>
+          <span class="ar-text">مش بس شو اشتروا، شو كانت تجربتهم</span>
+        </h2>
+        <p>
+          <span class="en-text">Every product can collect honest notes about scent, texture, softness, and real use.</span>
+          <span class="ar-text">كل منتج صار يقدر يجمع ملاحظات صادقة عن الرائحة، القوام، النعومة، والتجربة الفعلية.</span>
+        </p>
+        <small id="homeReviewsCount">
+          <span class="en-text">Be the first voice</span>
+          <span class="ar-text">كن أول تقييم</span>
+        </small>
+      </div>
+      <div id="homeReviewsList" class="home-reviews-list">
+        <article class="home-review-empty">
+          <i class="fas fa-star"></i>
+          <strong class="en-text">Reviews will appear here after customers share their experience.</strong>
+          <strong class="ar-text">التقييمات رح تظهر هون أول ما الزبائن يشاركوا تجربتهم.</strong>
+        </article>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div class="cart-overlay" id="cartOverlay"></div>
@@ -776,6 +910,7 @@
 </footer>
 
 <script type="module" src="firebase-config.js"></script>
+<script type="module" src="seo.js"></script>
 <script type="module" src="global.js"></script>
 
 <script>
