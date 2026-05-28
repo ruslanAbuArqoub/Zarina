@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Learn about Zarina, a natural apothecary focused on raw ingredients, botanical oils, herbs, and simple care rituals.">
-  <title>About ZARINA | Natural Apothecary & Raw Ingredients</title>
+  <meta name="description" content="تعرف على زارينا، متجر طبيعي يقدم منتجات عالية الجودة ومواد خام أولية مثل الزيوت النباتية والأعشاب والزبدات الخام. Learn about ZARINA natural apothecary and premium raw ingredients.">
+  <title>عن زارينا | منتجات طبيعية ومواد خام | About ZARINA</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="zarina-logo-mark.png">
@@ -159,17 +159,46 @@
 
     /* Responsive adjustments (page-specific) */
     @media (max-width: 800px) {
+      .story-section {
+        padding: 2.2rem 0 2rem;
+      }
       .story-grid {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 1.35rem;
+      }
+      .story-image {
+        max-width: 520px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      .story-image img {
+        aspect-ratio: 16 / 10;
+        border-radius: 18px;
+        height: auto;
+        max-height: 320px;
+        object-fit: cover;
+        object-position: center 58%;
       }
       .story-text h2 {
         font-size: 2.2rem;
       }
     }
     @media (max-width: 480px) {
+      .story-section {
+        padding-top: 1.4rem;
+      }
+      .story-image img {
+        aspect-ratio: 16 / 9;
+        border-radius: 14px;
+        max-height: 210px;
+      }
       .story-text h2 {
         font-size: 1.9rem;
+      }
+      .story-text p {
+        font-size: 0.98rem;
+        line-height: 1.65;
+        margin: 1rem 0;
       }
     }
   </style>
@@ -227,29 +256,21 @@
   <div class="container story-section">
     <div class="story-grid">
       <div class="story-image reveal">
-        <img src="https://placehold.co/600x500?text=Zarina+Apothecary+Herbs&font=playfair&bg=FCF3E2&textColor=8B6946" alt="Zarina natural herbal apothecary ingredients" loading="lazy" decoding="async">
+        <img src="about-raw-materials.png" alt="Zarina raw materials, natural oils, butters, and herbs" loading="lazy" decoding="async">
       </div>
       <div class="story-text reveal">
         <h2>
-          <span class="en-text">Rooted in nature,<br> raised by intuition.</span>
-          <span class="ar-text">جذورنا من الطبيعة،<br> وصنعناها بحب وإحساس.</span>
+          <span class="en-text">Zarina Raw Materials</span>
+          <span class="ar-text">زارينا للمواد الأولية</span>
         </h2>
         <p>
-          <span class="en-text">Zarina Raw Ingredients was born from a deep reverence for ancient herbalism and the belief that true beauty comes from pure, untouched botanicals. What began as a small kitchen apothecary — blending wildcrafted oils and healing herbs for loved ones — has grown into a sanctuary for those seeking honest, potent skincare.</span>
-          <span class="ar-text">مكونات "زارينا" الخام بلّشت من احترامنا الكبير لطب الأعشاب القديم، وإيماننا إنه الجمال الحقيقي بيجي من النباتات الصافية اللي ما انلمست. القصة بلشت بمطبخ صغير — كنا نخلط فيه زيوت طبيعية وأعشاب علاجية للناس اللي بنحبهم — وكبرت لتصير مكان آمن لكل حدا بدور على عناية حقيقية وفعّالة للبشرة.</span>
+          <span class="en-text">Zarina Raw Materials is a store specialized in providing natural raw ingredients for making cosmetic and care products.</span>
+          <span class="ar-text">زارينا للمواد الأولية هو متجر متخصص في توفير المكونات الطبيعية الخام لصناعة المنتجات التجميلية والعناية.</span>
         </p>
         <p>
-          <span class="en-text">Each oil, each raw ingredient is mindfully sourced from regenerative farms and ethical wildcrafters. We never compromise on purity: no synthetics, no fillers, only the quiet power of plants. Our name, Zarina, means "golden" — a tribute to the liquid gold of cold‑pressed oils and the luminous ritual of self-care.</span>
-          <span class="ar-text">كل زيت وكل مكون خام بنختاره بعناية من مزارع بتجدد مواردها ومصادر موثوقة. ما بنساوم أبداً على النقاء: ما في أي مواد صناعية أو إضافات، بس القوة الهادية اللي بالنباتات. اسمنا "زارينا" بيعني "الذهبي" — وهو تقدير للذهب السائل اللي بالزيوت المعصورة على البارد ولحظات العناية بالنفس.</span>
+          <span class="en-text">We believe quality starts with the raw material, so we carefully choose the best products to support small businesses, hobbyists, and professionals.</span>
+          <span class="ar-text">نؤمن أن الجودة تبدأ من المادة الأولية، لذلك نحرص على اختيار أفضل المنتجات لدعم المشاريع الصغيرة والهواة والمحترفين.</span>
         </p>
-        <p>
-          <span class="en-text">Today, our apothecary stands as a gathering place for plant alchemy, slow beauty, and intentional living. We invite you to explore the ingredients that have been cherished for centuries, reimagined for modern rituals.</span>
-          <span class="ar-text">اليوم، متجرنا صار مكان بيجمع بين سحر النباتات، الجمال الطبيعي، والحياة الهادية. بنعزمكم تكتشفوا المكونات اللي كان إلها قيمتها من قرون، ورجعنا قدمناها لتناسب روتينكم اليوم.</span>
-        </p>
-        <div class="story-signature">
-          <span class="en-text">— with golden intention, Zarina</span>
-          <span class="ar-text">— بنية من ذهب، زارينا</span>
-        </div>
       </div>
     </div>
 
@@ -301,8 +322,8 @@
     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
   </div>
   <p>
-    <span class="en-text">Zarina Raw Ingredients — pure, wild, intentional. <i class="fas fa-leaf"></i></span>
-    <span class="ar-text">مكونات زارينا الخام — صافية، طبيعية، ومدروسة. <i class="fas fa-leaf"></i></span>
+    <span class="en-text">ZARINA premium raw ingredients. <i class="fas fa-leaf"></i></span>
+    <span class="ar-text">زارينا مواد أولية بجودة عالية. <i class="fas fa-leaf"></i></span>
   </p>
   <p style="margin-top: 8px; font-size:0.75rem;">
     <!-- الباب السري للأدمن -->
@@ -310,8 +331,8 @@
       <span class="en-text">&copy; 2026 Zarina Apothecary</span>
       <span class="ar-text">&copy; 2026 متجر زارينا</span>
     </a> · 
-    <span class="en-text">Ancient wisdom for modern skin</span>
-    <span class="ar-text">حكمة زمان لبشرة اليوم</span>
+    <span class="en-text">Premium raw ingredients</span>
+    <span class="ar-text">مواد أولية بجودة عالية</span>
   </p>
 </footer>
 

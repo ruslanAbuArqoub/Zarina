@@ -43,9 +43,12 @@
       const mobileCartIcon = document.getElementById('cartIconBtn');
       const navbar = hamburger.closest('.navbar');
       const mobileActions = document.createElement('div');
+      const navMenuActions = document.createElement('div');
       const themeToggle = document.createElement('button');
       mobileActions.className = 'mobile-header-actions';
       mobileActions.setAttribute('aria-label', 'Quick actions');
+      navMenuActions.className = 'nav-menu-actions';
+      navMenuActions.setAttribute('aria-label', 'Menu actions');
       themeToggle.type = 'button';
       themeToggle.id = 'themeToggleBtn';
       themeToggle.className = 'theme-toggle';
@@ -53,10 +56,14 @@
       if (navbar) {
         navbar.insertBefore(mobileActions, hamburger);
       }
+      navLinks.appendChild(navMenuActions);
 
       function syncMobileHeaderActions() {
-        if (themeToggle.parentElement !== mobileActions) mobileActions.appendChild(themeToggle);
-        if (langToggle && langToggle.parentElement !== mobileActions) mobileActions.appendChild(langToggle);
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const utilityParent = isMobile ? navMenuActions : mobileActions;
+
+        if (themeToggle.parentElement !== utilityParent) utilityParent.appendChild(themeToggle);
+        if (langToggle && langToggle.parentElement !== utilityParent) utilityParent.appendChild(langToggle);
         if (mobileCartIcon && mobileCartIcon.parentElement !== mobileActions) mobileActions.appendChild(mobileCartIcon);
       }
 
@@ -1118,7 +1125,7 @@ function loadProducts() {
                 hasSale ? 'sale تخفيض' : ''
             ].join(' ');
             
-            let tagsHtml = '';
+            let tagsHtml = '<div class="product-tags product-tags-empty" aria-hidden="true"></div>';
             if (tagsArray.length > 0) {
                 tagsHtml = '<div class="product-tags">';
                 tagsArray.forEach(tag => {

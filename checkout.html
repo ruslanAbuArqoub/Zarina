@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Complete your Zarina order and review selected products, sizes, prices, and delivery details.">
+  <meta name="description" content="أكمل طلبك من زارينا للمنتجات الطبيعية والمواد الخام الأولية عالية الجودة مع الأحجام والأسعار والتوصيل. Complete your ZARINA order for premium natural products.">
   <meta name="robots" content="noindex, nofollow">
   <title>ZARINA · Checkout</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -282,12 +282,93 @@
       background: var(--forest-green, #2F5D3A);
     }
 
+    .phone-verification-box {
+      background: #FCF8F0;
+      border: 1px solid #EADBC6;
+      border-radius: 18px;
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 0.85rem;
+      padding: 1rem;
+    }
+    .phone-actions,
+    .otp-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+    .otp-row {
+      display: none;
+    }
+    .otp-row.show {
+      display: grid;
+    }
+    .verification-btn {
+      align-items: center;
+      background: var(--forest-green, #2F5D3A);
+      border: 0;
+      border-radius: 14px;
+      color: white;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: inherit;
+      font-weight: 800;
+      gap: 8px;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 16px;
+      white-space: nowrap;
+    }
+    .verification-btn.secondary {
+      background: var(--gold, #C6A43F);
+      color: #1F1E1A;
+    }
+    .verification-btn:disabled {
+      background: #C8C1B5;
+      color: #6A6256;
+      cursor: not-allowed;
+    }
+    .verification-status {
+      color: #6A6256;
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.5;
+      min-height: 1.35rem;
+    }
+    .verification-status.error {
+      color: #C94C4C;
+    }
+    .verification-status.success {
+      color: var(--forest-green, #2F5D3A);
+    }
+    .verified-pill {
+      align-items: center;
+      background: rgba(47, 93, 58, 0.1);
+      border: 1px solid rgba(47, 93, 58, 0.22);
+      border-radius: 999px;
+      color: var(--forest-green, #2F5D3A);
+      display: none;
+      font-size: 0.86rem;
+      font-weight: 900;
+      gap: 7px;
+      justify-content: center;
+      padding: 8px 12px;
+    }
+    .verified-pill.show {
+      display: inline-flex;
+    }
+
     @media (max-width: 800px) {
       .checkout-grid {
         grid-template-columns: 1fr;
         gap: 2rem;
       }
       .form-row {
+        grid-template-columns: 1fr;
+      }
+      .phone-actions,
+      .otp-row {
         grid-template-columns: 1fr;
       }
     }
@@ -447,6 +528,33 @@
               <span class="en-text"><i class="fas fa-exclamation-circle"></i> Please enter a valid Jordanian number starting with 07</span>
               <span class="ar-text"><i class="fas fa-exclamation-circle"></i> الرجاء إدخال رقم أردني صحيح (10 أرقام ويبدأ بـ 07)</span>
             </div>
+            <div class="phone-verification-box">
+              <div class="phone-actions">
+                <div class="verification-status" id="phoneVerificationStatus">
+                  <span class="en-text">Verify your phone before placing the order.</span>
+                  <span class="ar-text">أكد رقم هاتفك قبل إرسال الطلب.</span>
+                </div>
+                <button type="button" class="verification-btn" id="sendOtpBtn">
+                  <i class="fas fa-paper-plane"></i>
+                  <span class="en-text">Send OTP</span>
+                  <span class="ar-text">إرسال الكود</span>
+                </button>
+              </div>
+              <div class="otp-row" id="otpRow">
+                <input type="text" id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" dir="ltr">
+                <button type="button" class="verification-btn secondary" id="verifyOtpBtn">
+                  <i class="fas fa-shield-alt"></i>
+                  <span class="en-text">Verify</span>
+                  <span class="ar-text">تحقق</span>
+                </button>
+              </div>
+              <div class="verified-pill" id="verifiedPhonePill">
+                <i class="fas fa-check-circle"></i>
+                <span class="en-text">Phone verified</span>
+                <span class="ar-text">تم تأكيد الرقم</span>
+              </div>
+              <div id="recaptcha-container"></div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -555,8 +663,11 @@
   // 🔥 استدعاء مكتبات الفايربيس
   import { app } from './firebase-config.js';
   import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
   const db = getFirestore(app);
+  const auth = getAuth(app);
+  auth.languageCode = localStorage.getItem('zarinaLang') || 'ar';
   let cart = [];
   let orderTotalAmount = 0;
   const DELIVERY_FEE = 3.00; 
@@ -740,15 +851,250 @@
     });
   }
 
+  const TELEGRAM_BOT_TOKEN = '8880598545:AAFVK4E9oy7YUAsKyRpO9-3DNhecliEM3RU';
+  const TELEGRAM_CHAT_ID = '1156678242';
+
+  function escapeTelegramHtml(value) {
+    return (value || '').toString().replace(/[&<>"']/g, (char) => {
+      if (char === '&') return '&amp;';
+      if (char === '<') return '&lt;';
+      if (char === '>') return '&gt;';
+      if (char === '"') return '&quot;';
+      return '&#039;';
+    });
+  }
+
+  function formatTelegramItems(items = []) {
+    if (!Array.isArray(items) || items.length === 0) return 'No items';
+
+    return items.map((item, index) => {
+      const name = item.nameAr || item.nameEn || item.name || 'Product';
+      const variant = item.variantLabel ? ` - ${item.variantLabel}` : '';
+      const quantity = Number(item.quantity || 1);
+      const price = Number(item.price || 0);
+      const lineTotal = price * quantity;
+
+      return `${index + 1}. ${escapeTelegramHtml(name + variant)}\n   Qty: ${quantity} | ${lineTotal.toFixed(2)} JD`;
+    }).join('\n');
+  }
+
+  async function sendTelegramNotification(orderDetails) {
+    if (
+      !TELEGRAM_BOT_TOKEN ||
+      !TELEGRAM_CHAT_ID ||
+      TELEGRAM_BOT_TOKEN === 'PASTE_YOUR_BOT_TOKEN_HERE' ||
+      TELEGRAM_CHAT_ID === 'PASTE_YOUR_CHAT_ID_HERE'
+    ) {
+      console.log('Telegram notification skipped: add BOT_TOKEN and CHAT_ID first.');
+      return;
+    }
+
+    const message = `
+<b>New ZARINA Order</b>
+
+<b>Customer</b>
+Name: ${escapeTelegramHtml(orderDetails.customerName)}
+Phone: ${escapeTelegramHtml(orderDetails.customerPhone)}
+City: ${escapeTelegramHtml(orderDetails.customerCity)}
+Address: ${escapeTelegramHtml(orderDetails.customerAddress)}
+
+<b>Items</b>
+${formatTelegramItems(orderDetails.items)}
+
+<b>Total</b>
+${Number(orderDetails.totalAmount || 0).toFixed(2)} JD
+
+<b>Payment</b>
+${escapeTelegramHtml(orderDetails.paymentMethod || 'COD')}
+
+<b>Notes</b>
+${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
+`.trim();
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.log('Telegram notification failed:', response.status, errorBody);
+      }
+    } catch (error) {
+      console.log('Telegram notification failed:', error);
+    }
+  }
+
   const phoneInput = document.getElementById('phone');
   const phoneError = document.getElementById('phoneError');
+  const sendOtpBtn = document.getElementById('sendOtpBtn');
+  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+  const otpRow = document.getElementById('otpRow');
+  const otpCodeInput = document.getElementById('otpCode');
+  const verificationStatus = document.getElementById('phoneVerificationStatus');
+  const verifiedPhonePill = document.getElementById('verifiedPhonePill');
   const jordanPhoneRegex = /^07[789]\d{7}$/;
+  let recaptchaVerifier = null;
+  let confirmationResult = null;
+  let verifiedPhoneNumber = '';
+  let verifiedLocalPhone = '';
+  let otpSentToPhone = '';
   const cleanText = (value, maxLength) => (value || '')
     .toString()
     .replace(/[\u0000-\u001F\u007F]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLength);
+
+  function setButtonLoading(button, isLoading, loadingTextAr, loadingTextEn, idleHtml) {
+    if (!button) return;
+    button.disabled = isLoading;
+    button.innerHTML = isLoading
+      ? `<i class="fas fa-spinner fa-spin"></i><span class="en-text">${loadingTextEn}</span><span class="ar-text">${loadingTextAr}</span>`
+      : idleHtml;
+  }
+
+  function setVerificationStatus(type, messageAr, messageEn) {
+    if (!verificationStatus) return;
+    verificationStatus.className = `verification-status ${type || ''}`.trim();
+    verificationStatus.innerHTML = `<span class="en-text">${messageEn}</span><span class="ar-text">${messageAr}</span>`;
+  }
+
+  function normalizeJordanPhone(localPhone) {
+    const digits = (localPhone || '').replace(/\D/g, '');
+    if (!jordanPhoneRegex.test(digits)) return '';
+    return `+962${digits.slice(1)}`;
+  }
+
+  function resetPhoneVerification(message = true) {
+    confirmationResult = null;
+    verifiedPhoneNumber = '';
+    verifiedLocalPhone = '';
+    otpSentToPhone = '';
+    if (otpRow) otpRow.classList.remove('show');
+    if (otpCodeInput) otpCodeInput.value = '';
+    if (verifiedPhonePill) verifiedPhonePill.classList.remove('show');
+    if (message) {
+      setVerificationStatus('', 'أكد رقم هاتفك قبل إرسال الطلب.', 'Verify your phone before placing the order.');
+    }
+  }
+
+  function resetRecaptchaVerifier() {
+    if (!recaptchaVerifier) return;
+    try {
+      recaptchaVerifier.clear();
+    } catch (error) {
+      console.warn('Could not clear reCAPTCHA verifier:', error);
+    }
+    recaptchaVerifier = null;
+  }
+
+  function ensureRecaptchaVerifier() {
+    if (recaptchaVerifier) return recaptchaVerifier;
+    recaptchaVerifier = new RecaptchaVerifier(auth, 'sendOtpBtn', {
+      size: 'invisible',
+      callback: () => {},
+      'expired-callback': () => {
+        resetRecaptchaVerifier();
+        setVerificationStatus('error', 'انتهت صلاحية التحقق، حاول إرسال الكود مرة ثانية.', 'Verification expired. Please send the OTP again.');
+      }
+    });
+    return recaptchaVerifier;
+  }
+
+  async function sendPhoneOtp() {
+    const localPhone = phoneInput.value.trim();
+    const e164Phone = normalizeJordanPhone(localPhone);
+
+    if (!e164Phone) {
+      phoneError.style.display = 'block';
+      phoneInput.focus();
+      return;
+    }
+
+    try {
+      const verifier = ensureRecaptchaVerifier();
+      setButtonLoading(
+        sendOtpBtn,
+        true,
+        'جاري الإرسال...',
+        'Sending...',
+        '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">إرسال الكود</span>'
+      );
+      setVerificationStatus('', 'جاري إرسال كود التحقق...', 'Sending verification code...');
+      confirmationResult = await signInWithPhoneNumber(auth, e164Phone, verifier);
+      otpSentToPhone = localPhone;
+      if (otpRow) otpRow.classList.add('show');
+      if (otpCodeInput) otpCodeInput.focus();
+      setVerificationStatus('success', 'تم إرسال الكود برسالة SMS. أدخله للتأكيد.', 'OTP sent by SMS. Enter it to verify.');
+    } catch (error) {
+      console.error('Phone OTP send failed:', error);
+      confirmationResult = null;
+      resetRecaptchaVerifier();
+      setVerificationStatus('error', 'تعذر إرسال الكود. تأكد من الرقم أو حاول بعد قليل.', 'Could not send OTP. Check the number or try again shortly.');
+    } finally {
+      setButtonLoading(
+        sendOtpBtn,
+        false,
+        '',
+        '',
+        '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">إرسال الكود</span>'
+      );
+    }
+  }
+
+  async function verifyPhoneOtp() {
+    const code = (otpCodeInput?.value || '').replace(/\D/g, '').slice(0, 6);
+    if (!confirmationResult || code.length !== 6) {
+      setVerificationStatus('error', 'أدخل كود التحقق المكون من 6 أرقام.', 'Enter the 6-digit verification code.');
+      otpCodeInput?.focus();
+      return;
+    }
+
+    setButtonLoading(
+      verifyOtpBtn,
+      true,
+      'جاري التحقق...',
+      'Verifying...',
+      '<i class="fas fa-shield-alt"></i><span class="en-text">Verify</span><span class="ar-text">تحقق</span>'
+    );
+
+    try {
+      const credential = await confirmationResult.confirm(code);
+      verifiedPhoneNumber = credential.user?.phoneNumber || normalizeJordanPhone(phoneInput.value.trim());
+      verifiedLocalPhone = phoneInput.value.trim();
+      confirmationResult = null;
+      if (otpRow) otpRow.classList.remove('show');
+      if (verifiedPhonePill) verifiedPhonePill.classList.add('show');
+      setVerificationStatus('success', 'تم تأكيد رقم الهاتف بنجاح.', 'Phone number verified successfully.');
+      signOut(auth).catch((signOutError) => {
+        console.warn('Phone verification session sign-out failed:', signOutError);
+      });
+    } catch (error) {
+      console.error('Phone OTP verification failed:', error);
+      verifiedPhoneNumber = '';
+      verifiedLocalPhone = '';
+      setVerificationStatus('error', 'الكود غير صحيح أو انتهت صلاحيته. جرّب مرة ثانية.', 'Incorrect or expired code. Please try again.');
+      otpCodeInput?.focus();
+    } finally {
+      setButtonLoading(
+        verifyOtpBtn,
+        false,
+        '',
+        '',
+        '<i class="fas fa-shield-alt"></i><span class="en-text">Verify</span><span class="ar-text">تحقق</span>'
+      );
+    }
+  }
 
   phoneInput.addEventListener('input', (e) => {
     const val = e.target.value.trim();
@@ -757,6 +1103,18 @@
     } else {
       phoneError.style.display = 'none';
     }
+    if (verifiedLocalPhone && val !== verifiedLocalPhone) {
+      resetPhoneVerification();
+    } else if (otpSentToPhone && val !== otpSentToPhone) {
+      resetPhoneVerification(false);
+      setVerificationStatus('error', 'تم تغيير الرقم. أرسل كود جديد للرقم الجديد.', 'Phone changed. Send a new OTP for the new number.');
+    }
+  });
+
+  sendOtpBtn?.addEventListener('click', sendPhoneOtp);
+  verifyOtpBtn?.addEventListener('click', verifyPhoneOtp);
+  otpCodeInput?.addEventListener('input', () => {
+    otpCodeInput.value = otpCodeInput.value.replace(/\D/g, '').slice(0, 6);
   });
 
   const form = document.getElementById('checkoutForm');
@@ -774,6 +1132,12 @@
         phoneError.style.display = 'block';
         phoneInput.focus();
         return; 
+      }
+      const normalizedPhone = normalizeJordanPhone(phone);
+      if (!verifiedPhoneNumber || verifiedPhoneNumber !== normalizedPhone || verifiedLocalPhone !== phone) {
+        setVerificationStatus('error', 'لازم تأكد رقم الهاتف بالكود قبل إرسال الطلب.', 'Please verify your phone number with the OTP before placing the order.');
+        phoneInput.focus();
+        return;
       }
       
       const firstName = cleanText(document.getElementById('firstName').value, 40);
@@ -810,9 +1174,12 @@
           }
         }
 
-        await addDoc(collection(db, "orders"), {
+        const orderDetails = {
           customerName: fullName,
-          customerPhone: phone,
+          customerPhone: verifiedPhoneNumber,
+          customerPhoneLocal: phone,
+          phoneVerified: true,
+          phoneVerifiedAt: serverTimestamp(),
           customerCity: city, 
           customerAddress: address,
           orderNotes: orderNotes, 
@@ -824,6 +1191,14 @@
           totalAmount: orderTotalAmount, 
           status: "Pending", 
           createdAt: serverTimestamp() 
+        };
+
+        const orderRef = await addDoc(collection(db, "orders"), orderDetails);
+        sendTelegramNotification({
+          ...orderDetails,
+          orderId: orderRef.id,
+          phoneVerifiedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
         });
 
         localStorage.removeItem('zarinaCart');

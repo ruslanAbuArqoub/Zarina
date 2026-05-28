@@ -4,39 +4,39 @@ const SEO_IMAGE = `${SEO_SITE_URL}/zarina-logo-mark.png`;
 
 const pageSeo = {
   'index.html': {
-    title: 'ZARINA | Natural Raw Ingredients, Oils, Butters & Herbs in Jordan',
-    description: 'Shop Zarina natural raw ingredients, botanical oils, body butters, herbs, and apothecary essentials in Jordan with clear sizes and prices.',
-    keywords: 'Zarina, natural oils Jordan, raw shea butter, avocado butter, herbs Jordan, natural skincare, apothecary Jordan',
+    title: 'زارينا | منتجات طبيعية ومواد خام عالية الجودة | ZARINA Natural Products',
+    description: 'زارينا تقدم منتجات طبيعية ومواد خام أولية عالية الجودة في الأردن: زيوت طبيعية، زبدات خام، أعشاب ومستلزمات عناية. ZARINA offers premium natural products and raw ingredients in Jordan.',
+    keywords: 'زارينا, منتجات طبيعية الأردن, مواد خام أولية, مواد خام طبيعية, زيوت طبيعية, زبدات خام, أعشاب طبيعية, عناية طبيعية, زبدة الشيا الخام, زبدة الأفوكادو, Zarina, natural products Jordan, premium raw ingredients, natural oils, raw butters, herbs',
     type: 'WebSite'
   },
   'Apothecary.html': {
-    title: 'ZARINA Apothecary | Natural Oils, Butters, Herbs & Skin Care',
-    description: 'Explore Zarina apothecary products: natural oils, raw butters, herbs, botanical ingredients, and skin-care essentials with available sizes.',
-    keywords: 'natural oils, raw butters, shea butter, avocado butter, herbal remedies, skincare ingredients',
+    title: 'منتجات زارينا | زيوت وزبدات وأعشاب | ZARINA Apothecary Products',
+    description: 'تسوق منتجات زارينا الطبيعية عالية الجودة: زيوت طبيعية، زبدات خام، أعشاب، مواد خام أولية ومستلزمات عناية. Shop ZARINA natural oils, raw butters, herbs and premium ingredients.',
+    keywords: 'منتجات زارينا, زيوت طبيعية, زبدات خام, أعشاب طبيعية, مواد خام أولية, عناية بالبشرة طبيعية, منتجات طبيعية عالية الجودة, زيت طبيعي, زبدة الشيا, ZARINA products, raw butters, natural oils, premium raw ingredients, herbs, skincare ingredients',
     type: 'CollectionPage'
   },
   'Collections.html': {
-    title: 'ZARINA Collections | Shop Natural Product Groups by Size',
-    description: 'Browse Zarina collections by product group and discover natural oils, butters, herbs, and raw ingredients organized for quick shopping.',
-    keywords: 'Zarina collections, natural product collections, oils collection, butters collection, herbs collection',
+    title: 'مجموعات زارينا | منتجات ومواد خام | ZARINA Collections',
+    description: 'تصفح مجموعات زارينا من المنتجات الطبيعية والمواد الخام عالية الجودة، مرتبة حسب الزيوت والزبدات والأعشاب والعناية. Browse ZARINA collections by natural product group.',
+    keywords: 'مجموعات زارينا, مجموعات منتجات طبيعية, مجموعة الزيوت, مجموعة الزبدات, مجموعة الأعشاب, مواد خام طبيعية, منتجات طبيعية الأردن, Zarina collections, natural product groups, oils collection, butters collection, herbs collection',
     type: 'CollectionPage'
   },
   'CountactUS.html': {
-    title: 'Contact ZARINA | Orders, Delivery & Product Questions',
-    description: 'Contact Zarina for product questions, local delivery details, order help, and clear store policies for natural ingredients.',
-    keywords: 'contact Zarina, Zarina delivery, Zarina Jordan, natural products help',
+    title: 'تواصل مع زارينا | طلبات وتوصيل | Contact ZARINA',
+    description: 'تواصل مع زارينا للاستفسار عن المنتجات الطبيعية عالية الجودة، المواد الخام الأولية، الطلبات والتوصيل في الأردن. Contact ZARINA for orders, delivery and product questions.',
+    keywords: 'تواصل مع زارينا, زارينا الأردن, توصيل زارينا, طلب منتجات طبيعية, استفسار مواد خام, منتجات طبيعية عالية الجودة, contact Zarina, Zarina delivery Jordan, natural product questions, raw ingredients help',
     type: 'ContactPage'
   },
   'About.html': {
-    title: 'About ZARINA | Natural Apothecary & Raw Ingredients',
-    description: 'Learn about Zarina, a natural apothecary focused on raw ingredients, botanical oils, herbs, and simple care rituals.',
-    keywords: 'about Zarina, natural apothecary, raw ingredients, botanical oils',
+    title: 'عن زارينا | منتجات طبيعية ومواد خام | About ZARINA',
+    description: 'تعرف على زارينا، متجر طبيعي يقدم منتجات عالية الجودة ومواد خام أولية مثل الزيوت النباتية والأعشاب والزبدات الخام. Learn about ZARINA natural apothecary and premium raw ingredients.',
+    keywords: 'عن زارينا, زارينا, منتجات طبيعية عالية الجودة, مواد خام أولية, متجر منتجات طبيعية, زيوت نباتية, أعشاب طبيعية, زبدات خام, about Zarina, natural apothecary, premium raw ingredients, botanical oils',
     type: 'AboutPage'
   },
   'OURstory.html': {
-    title: 'ZARINA Story | Natural Care Inspired by Raw Ingredients',
-    description: 'Read Zarina story and the care behind our natural raw ingredients, oils, herbs, butters, and apothecary products.',
-    keywords: 'Zarina story, natural care, herbal apothecary, raw ingredients',
+    title: 'قصة زارينا | عناية ومواد خام طبيعية | ZARINA Story',
+    description: 'اقرأ قصة زارينا والاهتمام وراء منتجاتنا الطبيعية عالية الجودة: مواد خام أولية، زيوت، أعشاب وزبدات. Read the ZARINA story behind our natural care and premium ingredients.',
+    keywords: 'قصة زارينا, عناية طبيعية, مواد خام أولية, منتجات طبيعية عالية الجودة, أعشاب, زيوت طبيعية, زبدات خام, Zarina story, natural care, premium ingredients, herbal apothecary',
     type: 'AboutPage'
   }
 };
@@ -109,6 +109,7 @@ if (seo) {
     name: SEO_BRAND,
     url: SEO_SITE_URL,
     logo: SEO_IMAGE,
+    description: 'زارينا تقدم منتجات طبيعية ومواد خام أولية عالية الجودة، مثل الزيوت الطبيعية، الزبدات الخام، الأعشاب، ومستلزمات العناية.',
     sameAs: []
   });
 

@@ -655,7 +655,7 @@ function writeAdminCache(key, items) {
 }
 
     const productSearchInput = document.getElementById('productSearchInput');
-    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    const productCollectionFilter = document.getElementById('productCollectionFilter');
     const productVisibilityFilter = document.getElementById('productVisibilityFilter');
     const clearProductFiltersBtn = document.getElementById('clearProductFiltersBtn');
     const productsFilterCount = document.getElementById('productsFilterCount');
@@ -684,12 +684,12 @@ function writeAdminCache(key, items) {
         });
     }
 
-    function getProductCategoryKey(prod) {
-        return (prod.categoryEn || prod.categoryAr || '').trim();
-    }
-
     function getCollectionName(prod) {
         return (prod.collectionName || prod.collectionNameAr || prod.collection || '').trim();
+    }
+
+    function getCollectionFilterKey(value) {
+        return normalizeName(value);
     }
 
     function normalizeName(value) {
@@ -776,48 +776,47 @@ function writeAdminCache(key, items) {
         await loadCollectionsToTable();
     }
 
-    function getProductCategoryLabel(prod) {
-        const ar = (prod.categoryAr || '').trim();
-        const en = (prod.categoryEn || '').trim();
-        if (ar && en) return `${ar} / ${en}`;
-        return ar || en || 'بدون قسم';
-    }
+    function populateCollectionFilter() {
+        if (!productCollectionFilter) return;
 
-    function populateCategoryFilter() {
-        if (!productCategoryFilter) return;
+        const currentValue = productCollectionFilter.value || 'all';
+        const collections = new Map();
 
-        const currentValue = productCategoryFilter.value || 'all';
-        const categories = new Map();
-
-        allProducts.forEach(({ data }) => {
-            const key = getProductCategoryKey(data);
-            if (!key) return;
-            if (!categories.has(key)) categories.set(key, getProductCategoryLabel(data));
+        allCollections.forEach((item) => {
+            const label = (item.nameAr || item.nameEn || '').trim();
+            const key = getCollectionFilterKey(label);
+            if (key && !collections.has(key)) collections.set(key, label);
         });
 
-        let options = '<option value="all">كل الأقسام</option>';
-        [...categories.entries()]
+        allProducts.forEach(({ data }) => {
+            const label = getCollectionName(data);
+            const key = getCollectionFilterKey(label);
+            if (key && !collections.has(key)) collections.set(key, label);
+        });
+
+        let options = '<option value="all">كل المجموعات</option>';
+        [...collections.entries()]
             .sort((a, b) => a[1].localeCompare(b[1], 'ar'))
             .forEach(([key, label]) => {
                 const selected = key === currentValue ? 'selected' : '';
                 options += `<option value="${escapeHtml(key)}" ${selected}>${escapeHtml(label)}</option>`;
             });
 
-        productCategoryFilter.innerHTML = options;
+        productCollectionFilter.innerHTML = options;
 
-        if (currentValue !== 'all' && !categories.has(currentValue)) {
-            productCategoryFilter.value = 'all';
+        if (currentValue !== 'all' && !collections.has(currentValue)) {
+            productCollectionFilter.value = 'all';
         }
     }
 
     function getFilteredProducts() {
         const searchTerm = (productSearchInput?.value || '').trim().toLowerCase();
-        const categoryValue = productCategoryFilter?.value || 'all';
+        const collectionValue = productCollectionFilter?.value || 'all';
         const visibilityValue = productVisibilityFilter?.value || 'all';
 
         return allProducts.filter(({ data }) => {
             const isVisible = data.isVisible !== false;
-            const categoryKey = getProductCategoryKey(data);
+            const collectionKey = getCollectionFilterKey(getCollectionName(data));
             const searchableText = [
                 data.nameAr,
                 data.nameEn,
@@ -830,13 +829,13 @@ function writeAdminCache(key, items) {
             ].filter(Boolean).join(' ').toLowerCase();
 
             const matchesSearch = !searchTerm || searchableText.includes(searchTerm);
-            const matchesCategory = categoryValue === 'all' || categoryKey === categoryValue;
+            const matchesCollection = collectionValue === 'all' || collectionKey === collectionValue;
             const matchesVisibility =
                 visibilityValue === 'all' ||
                 (visibilityValue === 'visible' && isVisible) ||
                 (visibilityValue === 'hidden' && !isVisible);
 
-            return matchesSearch && matchesCategory && matchesVisibility;
+            return matchesSearch && matchesCollection && matchesVisibility;
         });
     }
 
@@ -946,14 +945,14 @@ function writeAdminCache(key, items) {
     }
 
     if (productSearchInput) productSearchInput.addEventListener('input', renderProductsTable);
-    [productCategoryFilter, productVisibilityFilter].forEach(control => {
+    [productCollectionFilter, productVisibilityFilter].forEach(control => {
         if (control) control.addEventListener('change', renderProductsTable);
     });
 
     if (clearProductFiltersBtn) {
         clearProductFiltersBtn.addEventListener('click', () => {
             if (productSearchInput) productSearchInput.value = '';
-            if (productCategoryFilter) productCategoryFilter.value = 'all';
+            if (productCollectionFilter) productCollectionFilter.value = 'all';
             if (productVisibilityFilter) productVisibilityFilter.value = 'all';
             renderProductsTable();
         });
@@ -1044,7 +1043,7 @@ function writeAdminCache(key, items) {
             const cachedProducts = readAdminCache(ADMIN_PRODUCTS_CACHE_KEY);
             if (cachedProducts) {
                 allProducts = cachedProducts;
-                populateCategoryFilter();
+                populateCollectionFilter();
                 renderProductsTable();
             }
 
@@ -1062,7 +1061,7 @@ function writeAdminCache(key, items) {
             });
 
             writeAdminCache(ADMIN_PRODUCTS_CACHE_KEY, allProducts);
-            populateCategoryFilter();
+            populateCollectionFilter();
             renderProductsTable();
         } catch (error) {
             console.error("خطأ:", error);
@@ -1091,6 +1090,9 @@ function writeAdminCache(key, items) {
                     return `<option value="${escapeHtml(value)}"></option>`;
                 }).join('');
             }
+
+            populateCollectionFilter();
+            renderProductsTable();
 
             if (!tbody) return;
 

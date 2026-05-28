@@ -957,8 +957,9 @@
             <small class="collection-note">ارفع صورة من جهازك مباشرة على Firebase Storage. الحد الأقصى 5MB.</small>
           </div>
           <div class="form-group">
-            <label>التاجات - tags (اكتبها بالإنجليزي وافصل بمسافة)</label>
-            <input type="text" id="prodTags" class="form-control" placeholder="skin hair" required>
+            <label>التاجات - tags (اختياري)</label>
+            <input type="text" id="prodTags" class="form-control" placeholder="skin hair relaxation">
+            <small class="collection-note">اتركه فارغ إذا المنتج ما بيناسب skin / hair / relaxation. رح يضل مكان التاجات محجوز بالكرت بدون ما يغيّر ترتيب العناصر.</small>
           </div>
           <button type="submit" class="btn-submit">حفظ وإضافة للمتجر</button>
         </form>
@@ -969,12 +970,12 @@
         <div class="products-toolbar">
           <div class="toolbar-field">
             <label for="productSearchInput">بحث سريع</label>
-            <input type="search" id="productSearchInput" class="form-control" placeholder="ابحث باسم المنتج أو القسم...">
+            <input type="search" id="productSearchInput" class="form-control" placeholder="ابحث باسم المنتج أو المجموعة...">
           </div>
           <div class="toolbar-field">
-            <label for="productCategoryFilter">فلترة حسب القسم</label>
-            <select id="productCategoryFilter" class="form-control">
-              <option value="all">كل الأقسام</option>
+            <label for="productCollectionFilter">فلترة حسب المجموعات</label>
+            <select id="productCollectionFilter" class="form-control">
+              <option value="all">كل المجموعات</option>
             </select>
           </div>
           <div class="toolbar-field">
