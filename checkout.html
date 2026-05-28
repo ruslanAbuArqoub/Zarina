@@ -942,9 +942,19 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
   const otpCodeInput = document.getElementById('otpCode');
   const verificationStatus = document.getElementById('phoneVerificationStatus');
   const verifiedPhonePill = document.getElementById('verifiedPhonePill');
+  const recaptchaContainerHost = document.getElementById('recaptcha-container');
   const jordanPhoneRegex = /^07[789]\d{7}$/;
+  // TEMP: phone OTP verification is disabled while testing checkout.
+  // Set this back to false to require SMS verification before placing orders.
+  const TEMP_DISABLE_PHONE_OTP = true;
   let recaptchaVerifier = null;
+  let recaptchaRenderPromise = null;
+  let recaptchaElement = null;
+  let recaptchaElementCounter = 0;
   let confirmationResult = null;
+  let isSendingOtp = false;
+  let otpRetryBlockedUntil = Number(localStorage.getItem('zarinaOtpRetryBlockedUntil') || 0);
+  let otpRetryCountdownTimer = null;
   let verifiedPhoneNumber = '';
   let verifiedLocalPhone = '';
   let otpSentToPhone = '';
@@ -957,7 +967,9 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
 
   function setButtonLoading(button, isLoading, loadingTextAr, loadingTextEn, idleHtml) {
     if (!button) return;
-    button.disabled = isLoading;
+    button.disabled = !isLoading && button === sendOtpBtn && Date.now() < otpRetryBlockedUntil
+      ? true
+      : isLoading;
     button.innerHTML = isLoading
       ? `<i class="fas fa-spinner fa-spin"></i><span class="en-text">${loadingTextEn}</span><span class="ar-text">${loadingTextAr}</span>`
       : idleHtml;
@@ -975,6 +987,61 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     return `+962${digits.slice(1)}`;
   }
 
+  function isTooManyRequestsError(error) {
+    return error?.code === 'auth/too-many-requests'
+      || String(error?.message || '').includes('too-many-requests');
+  }
+
+  function formatOtpRetryTime(milliseconds) {
+    const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  }
+
+  function clearOtpRetryBlock() {
+    otpRetryBlockedUntil = 0;
+    localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+    if (otpRetryCountdownTimer) {
+      window.clearInterval(otpRetryCountdownTimer);
+      otpRetryCountdownTimer = null;
+    }
+    if (sendOtpBtn && !isSendingOtp) {
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">&#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583;</span>';
+    }
+  }
+
+  function updateOtpRetryCountdown() {
+    const remainingMs = otpRetryBlockedUntil - Date.now();
+    if (remainingMs <= 0) {
+      clearOtpRetryBlock();
+      setVerificationStatus('', '&#1610;&#1605;&#1603;&#1606;&#1603; &#1573;&#1593;&#1575;&#1583;&#1577; &#1575;&#1604;&#1605;&#1581;&#1575;&#1608;&#1604;&#1577; &#1575;&#1604;&#1570;&#1606;.', 'You can try again now.');
+      return;
+    }
+
+    const timeLeft = formatOtpRetryTime(remainingMs);
+    if (sendOtpBtn && !isSendingOtp) {
+      sendOtpBtn.disabled = true;
+      sendOtpBtn.innerHTML = `<i class="fas fa-clock"></i><span class="en-text">Retry in ${timeLeft}</span><span class="ar-text">&#1575;&#1604;&#1605;&#1581;&#1575;&#1608;&#1604;&#1577; &#1576;&#1593;&#1583; ${timeLeft}</span>`;
+    }
+    setVerificationStatus('error', `&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1591;&#1604;&#1576;&#1575;&#1578; &#1603;&#1579;&#1610;&#1585;&#1577;. &#1581;&#1575;&#1608;&#1604; &#1576;&#1593;&#1583; ${timeLeft}.`, `Too many attempts. Try again in ${timeLeft}.`);
+  }
+
+  function startOtpRetryCountdown() {
+    updateOtpRetryCountdown();
+    if (otpRetryCountdownTimer) {
+      window.clearInterval(otpRetryCountdownTimer);
+    }
+    otpRetryCountdownTimer = window.setInterval(updateOtpRetryCountdown, 1000);
+  }
+
+  function blockOtpRetry(milliseconds) {
+    otpRetryBlockedUntil = Date.now() + milliseconds;
+    localStorage.setItem('zarinaOtpRetryBlockedUntil', String(otpRetryBlockedUntil));
+    startOtpRetryCountdown();
+  }
+
   function resetPhoneVerification(message = true) {
     confirmationResult = null;
     verifiedPhoneNumber = '';
@@ -989,18 +1056,32 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
   }
 
   function resetRecaptchaVerifier() {
-    if (!recaptchaVerifier) return;
-    try {
-      recaptchaVerifier.clear();
-    } catch (error) {
-      console.warn('Could not clear reCAPTCHA verifier:', error);
-    }
+    const element = recaptchaElement;
     recaptchaVerifier = null;
+    recaptchaRenderPromise = null;
+    recaptchaElement = null;
+
+    if (element) {
+      element.hidden = true;
+      element.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function createRecaptchaElement() {
+    if (!recaptchaContainerHost) {
+      throw new Error('Missing reCAPTCHA container.');
+    }
+
+    const element = document.createElement('div');
+    element.id = `recaptcha-container-${Date.now()}-${recaptchaElementCounter += 1}`;
+    recaptchaContainerHost.appendChild(element);
+    recaptchaElement = element;
+    return element.id;
   }
 
   function ensureRecaptchaVerifier() {
     if (recaptchaVerifier) return recaptchaVerifier;
-    recaptchaVerifier = new RecaptchaVerifier(auth, 'sendOtpBtn', {
+    recaptchaVerifier = new RecaptchaVerifier(auth, createRecaptchaElement(), {
       size: 'invisible',
       callback: () => {},
       'expired-callback': () => {
@@ -1011,7 +1092,33 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     return recaptchaVerifier;
   }
 
+  async function getRecaptchaVerifier() {
+    const verifier = ensureRecaptchaVerifier();
+    if (!recaptchaRenderPromise) {
+      recaptchaRenderPromise = verifier.render().catch((error) => {
+        resetRecaptchaVerifier();
+        throw error;
+      });
+    }
+    await recaptchaRenderPromise;
+    return verifier;
+  }
+
   async function sendPhoneOtp() {
+    if (isSendingOtp) return;
+
+    let retryMs = otpRetryBlockedUntil - Date.now();
+    if (otpRetryBlockedUntil && retryMs <= 0) {
+      otpRetryBlockedUntil = 0;
+      localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+      retryMs = 0;
+    }
+    if (retryMs > 0) {
+      const retrySeconds = Math.ceil(retryMs / 1000);
+      setVerificationStatus('error', `Ø§Ù†ØªØ¸Ø± ${retrySeconds} Ø«Ø§Ù†ÙŠØ© Ù‚Ø¨Ù„ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©.`, `Wait ${retrySeconds} seconds before trying again.`);
+      return;
+    }
+
     const localPhone = phoneInput.value.trim();
     const e164Phone = normalizeJordanPhone(localPhone);
 
@@ -1020,9 +1127,10 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
       phoneInput.focus();
       return;
     }
+    phoneError.style.display = 'none';
 
+    isSendingOtp = true;
     try {
-      const verifier = ensureRecaptchaVerifier();
       setButtonLoading(
         sendOtpBtn,
         true,
@@ -1031,7 +1139,7 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
         '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">إرسال الكود</span>'
       );
       setVerificationStatus('', 'جاري إرسال كود التحقق...', 'Sending verification code...');
-      confirmationResult = await signInWithPhoneNumber(auth, e164Phone, verifier);
+      confirmationResult = await signInWithPhoneNumber(auth, e164Phone, await getRecaptchaVerifier());
       otpSentToPhone = localPhone;
       if (otpRow) otpRow.classList.add('show');
       if (otpCodeInput) otpCodeInput.focus();
@@ -1040,8 +1148,14 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
       console.error('Phone OTP send failed:', error);
       confirmationResult = null;
       resetRecaptchaVerifier();
+      if (isTooManyRequestsError(error)) {
+        blockOtpRetry(120000);
+        setVerificationStatus('error', 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø·Ù„Ø¨Ø§Øª ÙƒØ«ÙŠØ±Ø©. Ø§Ù†ØªØ¸Ø± Ø¯Ù‚ÙŠÙ‚ØªÙŠÙ† Ø«Ù… Ø¬Ø±Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.', 'Too many attempts. Wait 2 minutes, then try again.');
+      } else {
       setVerificationStatus('error', 'تعذر إرسال الكود. تأكد من الرقم أو حاول بعد قليل.', 'Could not send OTP. Check the number or try again shortly.');
+      }
     } finally {
+      isSendingOtp = false;
       setButtonLoading(
         sendOtpBtn,
         false,
@@ -1049,6 +1163,70 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
         '',
         '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">إرسال الكود</span>'
       );
+    }
+  }
+
+  async function sendPhoneOtpFixed() {
+    if (isSendingOtp) return;
+
+    let retryMs = otpRetryBlockedUntil - Date.now();
+    if (otpRetryBlockedUntil && retryMs <= 0) {
+      otpRetryBlockedUntil = 0;
+      localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+      retryMs = 0;
+    }
+    if (retryMs > 0) {
+      startOtpRetryCountdown();
+      return;
+    }
+
+    const localPhone = phoneInput.value.trim();
+    const e164Phone = normalizeJordanPhone(localPhone);
+
+    if (!e164Phone) {
+      phoneError.style.display = 'block';
+      phoneInput.focus();
+      return;
+    }
+    phoneError.style.display = 'none';
+
+    isSendingOtp = true;
+    try {
+      setButtonLoading(
+        sendOtpBtn,
+        true,
+        '&#1580;&#1575;&#1585;&#1610; &#1575;&#1604;&#1573;&#1585;&#1587;&#1575;&#1604;...',
+        'Sending...',
+        '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">&#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583;</span>'
+      );
+      setVerificationStatus('', '&#1580;&#1575;&#1585;&#1610; &#1573;&#1585;&#1587;&#1575;&#1604; &#1603;&#1608;&#1583; &#1575;&#1604;&#1578;&#1581;&#1602;&#1602;...', 'Sending verification code...');
+      confirmationResult = await signInWithPhoneNumber(auth, e164Phone, await getRecaptchaVerifier());
+      otpSentToPhone = localPhone;
+      if (otpRow) otpRow.classList.add('show');
+      if (otpCodeInput) otpCodeInput.focus();
+      setVerificationStatus('success', '&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583; &#1576;&#1585;&#1587;&#1575;&#1604;&#1577; SMS. &#1571;&#1583;&#1582;&#1604;&#1607; &#1604;&#1604;&#1578;&#1571;&#1603;&#1610;&#1583;.', 'OTP sent by SMS. Enter it to verify.');
+    } catch (error) {
+      console.error('Phone OTP send failed:', error);
+      confirmationResult = null;
+      resetRecaptchaVerifier();
+      if (isTooManyRequestsError(error)) {
+        blockOtpRetry(120000);
+        setVerificationStatus('error', '&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1591;&#1604;&#1576;&#1575;&#1578; &#1603;&#1579;&#1610;&#1585;&#1577;. &#1575;&#1606;&#1578;&#1592;&#1585; &#1583;&#1602;&#1610;&#1602;&#1578;&#1610;&#1606; &#1579;&#1605; &#1580;&#1585;&#1576; &#1605;&#1585;&#1577; &#1571;&#1582;&#1585;&#1609;.', 'Too many attempts. Wait 2 minutes, then try again.');
+      } else {
+        setVerificationStatus('error', '&#1578;&#1593;&#1584;&#1585; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583; &#1605;&#1606; Firebase. &#1575;&#1606;&#1578;&#1592;&#1585; &#1602;&#1604;&#1610;&#1604;&#1575; &#1579;&#1605; &#1581;&#1575;&#1608;&#1604; &#1605;&#1585;&#1577; &#1571;&#1582;&#1585;&#1609;.', 'Could not send OTP. Firebase refused the request; wait a bit and try again.');
+      }
+    } finally {
+      isSendingOtp = false;
+      setButtonLoading(
+        sendOtpBtn,
+        false,
+        '',
+        '',
+        '<i class="fas fa-paper-plane"></i><span class="en-text">Send OTP</span><span class="ar-text">&#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583;</span>'
+      );
+      if (otpRetryBlockedUntil > Date.now()) {
+        updateOtpRetryCountdown();
+      }
     }
   }
 
@@ -1111,11 +1289,23 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     }
   });
 
-  sendOtpBtn?.addEventListener('click', sendPhoneOtp);
-  verifyOtpBtn?.addEventListener('click', verifyPhoneOtp);
+  if (TEMP_DISABLE_PHONE_OTP) {
+    sendOtpBtn?.setAttribute('disabled', 'disabled');
+    verifyOtpBtn?.setAttribute('disabled', 'disabled');
+    otpRow?.classList.remove('show');
+    setVerificationStatus('', '&#1578;&#1571;&#1603;&#1610;&#1583; &#1575;&#1604;&#1607;&#1575;&#1578;&#1601; &#1605;&#1608;&#1602;&#1601; &#1605;&#1572;&#1602;&#1578;&#1575;. &#1593;&#1576;&#1610; &#1575;&#1604;&#1576;&#1610;&#1575;&#1606;&#1575;&#1578; &#1604;&#1578;&#1571;&#1603;&#1610;&#1583; &#1575;&#1604;&#1591;&#1604;&#1576;.', 'Phone OTP is temporarily disabled. Fill the form to place the order.');
+  } else {
+    sendOtpBtn?.addEventListener('click', sendPhoneOtpFixed);
+    verifyOtpBtn?.addEventListener('click', verifyPhoneOtp);
+  }
   otpCodeInput?.addEventListener('input', () => {
     otpCodeInput.value = otpCodeInput.value.replace(/\D/g, '').slice(0, 6);
   });
+  if (!TEMP_DISABLE_PHONE_OTP && otpRetryBlockedUntil > Date.now()) {
+    startOtpRetryCountdown();
+  } else if (!TEMP_DISABLE_PHONE_OTP && otpRetryBlockedUntil) {
+    clearOtpRetryBlock();
+  }
 
   const form = document.getElementById('checkoutForm');
   if (form) {
@@ -1133,11 +1323,16 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
         phoneInput.focus();
         return; 
       }
+      phoneError.style.display = 'none';
+      // TEMP: OTP verification is bypassed while testing checkout.
+      // Re-enable it by setting TEMP_DISABLE_PHONE_OTP to false.
+      if (!TEMP_DISABLE_PHONE_OTP) {
       const normalizedPhone = normalizeJordanPhone(phone);
       if (!verifiedPhoneNumber || verifiedPhoneNumber !== normalizedPhone || verifiedLocalPhone !== phone) {
         setVerificationStatus('error', 'لازم تأكد رقم الهاتف بالكود قبل إرسال الطلب.', 'Please verify your phone number with the OTP before placing the order.');
         phoneInput.focus();
         return;
+      }
       }
       
       const firstName = cleanText(document.getElementById('firstName').value, 40);
@@ -1176,10 +1371,7 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
 
         const orderDetails = {
           customerName: fullName,
-          customerPhone: verifiedPhoneNumber,
-          customerPhoneLocal: phone,
-          phoneVerified: true,
-          phoneVerifiedAt: serverTimestamp(),
+          customerPhone: phone,
           customerCity: city, 
           customerAddress: address,
           orderNotes: orderNotes, 
