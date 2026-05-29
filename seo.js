@@ -1,6 +1,6 @@
 const SEO_SITE_URL = 'https://zarinastore-cc94b.web.app';
 const SEO_BRAND = 'ZARINA';
-const SEO_IMAGE = `${SEO_SITE_URL}/zarina-logo-mark.png`;
+const SEO_IMAGE = `${SEO_SITE_URL}/og-zarina-preview.png`;
 
 const pageSeo = {
   'index.html': {
