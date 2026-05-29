@@ -4,6 +4,7 @@ import { app } from './firebase-config.js';
 import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, setDoc, onSnapshot, enableIndexedDbPersistence, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
+import { initAdminOrderNotifications } from './admin-notifications.js';
 
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch(() => {});
@@ -56,7 +57,9 @@ onAuthStateChanged(auth, (user) => {
     if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
         if (user) signOut(auth);
         window.location.href = 'login.html';
+        return;
     }
+    initAdminOrderNotifications(db, user);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -523,6 +526,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modalCollectionInputForSelect = document.getElementById('modalCollectionName');
+        if (modalCollectionInputForSelect && !document.getElementById('modalCollectionSelect')) {
+            modalCollectionInputForSelect.insertAdjacentHTML('beforebegin', `
+                <select id="modalCollectionSelect" class="form-control">
+                    <option value="">اختر مجموعة موجودة</option>
+                </select>
+            `);
+        }
 
         // برمجة وظائف النافذة (فتح، إغلاق، حفظ)
         const modalOverlay = document.getElementById('priceEditModal');
@@ -660,6 +671,8 @@ function writeAdminCache(key, items) {
     const clearProductFiltersBtn = document.getElementById('clearProductFiltersBtn');
     const productsFilterCount = document.getElementById('productsFilterCount');
     const collectionsDatalist = document.getElementById('collectionsDatalist');
+    const prodCollectionInput = document.getElementById('prodCollection');
+    const prodCollectionSelect = document.getElementById('prodCollectionSelect');
 
     renderVariants('productVariantsList');
     document.getElementById('addVariantBtn')?.addEventListener('click', () => {
@@ -809,6 +822,26 @@ function writeAdminCache(key, items) {
         }
     }
 
+    function populateProductCollectionSelect() {
+        const modalCollectionSelect = document.getElementById('modalCollectionSelect');
+        if (!prodCollectionSelect && !modalCollectionSelect) return;
+
+        const currentValue = prodCollectionInput?.value.trim() || '';
+        const options = ['<option value="">اختر مجموعة موجودة</option>'];
+        allCollections
+            .map(item => (item.nameAr || item.nameEn || '').trim())
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, 'ar'))
+            .forEach((label) => {
+                const selected = normalizeName(label) === normalizeName(currentValue) ? 'selected' : '';
+                options.push(`<option value="${escapeHtml(label)}" ${selected}>${escapeHtml(label)}</option>`);
+            });
+
+        const optionsHtml = options.join('');
+        if (prodCollectionSelect) prodCollectionSelect.innerHTML = optionsHtml;
+        if (modalCollectionSelect) modalCollectionSelect.innerHTML = optionsHtml;
+    }
+
     function getFilteredProducts() {
         const searchTerm = (productSearchInput?.value || '').trim().toLowerCase();
         const collectionValue = productCollectionFilter?.value || 'all';
@@ -948,6 +981,17 @@ function writeAdminCache(key, items) {
     [productCollectionFilter, productVisibilityFilter].forEach(control => {
         if (control) control.addEventListener('change', renderProductsTable);
     });
+    prodCollectionSelect?.addEventListener('change', () => {
+        if (prodCollectionInput) {
+            prodCollectionInput.value = prodCollectionSelect.value;
+        }
+    });
+    prodCollectionInput?.addEventListener('input', () => {
+        if (!prodCollectionSelect) return;
+        const typedValue = normalizeName(prodCollectionInput.value);
+        const matchingOption = [...prodCollectionSelect.options].find(option => normalizeName(option.value) === typedValue);
+        prodCollectionSelect.value = matchingOption ? matchingOption.value : '';
+    });
 
     if (clearProductFiltersBtn) {
         clearProductFiltersBtn.addEventListener('click', () => {
@@ -1005,8 +1049,17 @@ function writeAdminCache(key, items) {
         currentEditingProdId = id;
 
         const input = document.getElementById('modalCollectionName');
+        const modalSelect = document.getElementById('modalCollectionSelect');
         const picker = document.getElementById('collectionPickerList');
         input.value = currentCollection && currentCollection !== 'null' ? currentCollection : '';
+        populateProductCollectionSelect();
+        if (modalSelect) {
+            const matchingOption = [...modalSelect.options].find(option => normalizeName(option.value) === normalizeName(input.value));
+            modalSelect.value = matchingOption ? matchingOption.value : '';
+            modalSelect.onchange = () => {
+                input.value = modalSelect.value;
+            };
+        }
 
         if (picker) {
             if (allCollections.length === 0) {
@@ -1021,6 +1074,7 @@ function writeAdminCache(key, items) {
                 picker.querySelectorAll('.collection-choice').forEach(btn => {
                     btn.addEventListener('click', () => {
                         input.value = btn.getAttribute('data-name');
+                        if (modalSelect) modalSelect.value = input.value;
                         picker.querySelectorAll('.collection-choice').forEach(choice => choice.classList.remove('active'));
                         btn.classList.add('active');
                     });
@@ -1090,6 +1144,7 @@ function writeAdminCache(key, items) {
                     return `<option value="${escapeHtml(value)}"></option>`;
                 }).join('');
             }
+            populateProductCollectionSelect();
 
             populateCollectionFilter();
             renderProductsTable();
@@ -1183,7 +1238,7 @@ function writeAdminCache(key, items) {
 
         const oldPriceInput = document.getElementById('prodOldPrice').value;
         const oldPriceValue = oldPriceInput.trim() !== "" ? parseFloat(oldPriceInput) : null;
-        const collectionName = document.getElementById('prodCollection').value.trim();
+        const collectionName = (prodCollectionInput?.value || '').trim();
         const variants = collectVariants('productVariantsList');
         const imageFile = document.getElementById('prodImgFile')?.files?.[0];
         let imageUrl = document.getElementById('prodImg').value.trim();

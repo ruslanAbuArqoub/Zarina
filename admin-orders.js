@@ -1,6 +1,7 @@
 import { app } from './firebase-config.js';
 import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+import { initAdminOrderNotifications } from './admin-notifications.js';
 
 const db = getFirestore(app);
 enableIndexedDbPersistence(db).catch(() => {});
@@ -12,7 +13,9 @@ onAuthStateChanged(auth, (user) => {
     if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
         if (user) signOut(auth);
         window.location.href = 'login.html';
+        return;
     }
+    initAdminOrderNotifications(db, user);
 });
 
 document.getElementById('btnLogout')?.addEventListener('click', () => {
@@ -120,7 +123,7 @@ function renderOrders(orderDocs) {
             }
 
             const trHtml = `
-                <tr>
+                <tr id="order-${orderId}">
                     <td><strong>#${shortId}</strong></td>
                     <td>
                         ${order.customerName}<br>
