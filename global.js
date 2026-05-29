@@ -158,6 +158,7 @@
                 <span class="ar-text">${escapeHtml(nameAr)}</span>
               </div>
               ${item.variantLabel ? `<div style="font-size:0.8rem;color:#6C6253;">${escapeHtml(item.variantLabel)}</div>` : ''}
+              ${item.colorName ? `<div style="align-items:center;display:flex;gap:6px;font-size:0.8rem;color:#6C6253;"><span style="background:${escapeHtml(item.hexCode || '#ddd')};border:1px solid rgba(0,0,0,.18);border-radius:50%;display:inline-block;height:13px;width:13px;"></span>${escapeHtml(item.colorName)}</div>` : ''}
               <div class="cart-item-price">${item.price} JD</div>
               <div class="cart-qty">
                 <button class="qty-btn" data-id="${item.id}" data-delta="-1">-</button>
@@ -249,7 +250,9 @@
           price: product.price,
           quantity: product.quantity || 1,
           img: product.img || 'https://placehold.co/60x60?text=herb',
-          variantLabel: product.variantLabel || ''
+          variantLabel: product.variantLabel || '',
+          colorName: product.colorName || '',
+          hexCode: product.hexCode || ''
         });
       }
       saveCart();
@@ -488,6 +491,17 @@ function getProductVariants(product) {
     }];
 }
 
+function normalizeProductColor(color) {
+    const colorName = (color?.colorName || color?.name || '').toString().trim();
+    const hexCode = (color?.hexCode || color?.hex || '').toString().trim();
+    if (!colorName || !/^#[0-9a-f]{6}$/i.test(hexCode)) return null;
+    return { colorName, hexCode: hexCode.toLowerCase() };
+}
+
+function getProductColors(product) {
+    return Array.isArray(product.colors) ? product.colors.map(normalizeProductColor).filter(Boolean) : [];
+}
+
 function reviewDateValue(review) {
     const createdAt = review.createdAt;
     if (!createdAt) return 0;
@@ -714,6 +728,15 @@ function ensureProductModal() {
           .variant-option:hover { transform: translateY(-2px); border-color: rgba(198,164,63,.8); }
           .variant-option.active { border-color: var(--gold,#C6A43F); box-shadow: 0 0 0 2px rgba(198,164,63,.18), 0 10px 20px rgba(198,164,63,.13); }
           .variant-option[disabled] { opacity: .48; cursor: not-allowed; }
+          .product-color-section { margin: 1rem 0; }
+          .product-color-title { color:#2F5D3A; display:block; font-weight:900; margin-bottom:8px; }
+          .product-color-options { display:flex; flex-wrap:wrap; gap:10px; }
+          .product-color-option { align-items:center; background:#fff; border:1px solid #DCCFBC; border-radius:999px; cursor:pointer; display:inline-flex; gap:9px; padding:8px 12px; transition:border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+          .product-color-option:hover { border-color:rgba(198,164,63,.85); transform:translateY(-1px); }
+          .product-color-option input { height:1px; opacity:0; position:absolute; width:1px; }
+          .product-color-dot { border:1px solid rgba(0,0,0,.16); border-radius:50%; display:inline-block; height:24px; width:24px; }
+          .product-color-option.active { border-color:var(--gold,#C6A43F); box-shadow:0 0 0 3px rgba(198,164,63,.22); }
+          .product-color-option.active .product-color-dot { box-shadow:0 0 0 3px #fff, 0 0 0 6px rgba(198,164,63,.8); }
           .detail-qty { display: flex; align-items: center; gap: 10px; margin: 1rem 0; }
           .detail-qty button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #DCCFBC; background: white; cursor: pointer; font-weight: 900; }
           .detail-add { width: 100%; min-height: 50px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--gold,#C6A43F), #AA862E); color: white; font-weight: 900; cursor: pointer; box-shadow: 0 12px 24px rgba(198,164,63,.22); }
@@ -770,8 +793,10 @@ function openProductDetail(productId) {
     if (!product) return;
 
     const variants = getProductVariants(product);
+    const colors = getProductColors(product);
     let selectedIndex = variants.findIndex(v => v.status !== 'out_of_stock');
     if (selectedIndex < 0) selectedIndex = 0;
+    let selectedColorIndex = colors.length ? 0 : -1;
     let qty = 1;
 
     const modal = ensureProductModal();
@@ -814,6 +839,20 @@ function openProductDetail(productId) {
                   </button>
                 `).join('')}
               </div>
+              ${colors.length ? `
+                <div class="product-color-section">
+                  <strong class="product-color-title"><span class="en-text">Choose color</span><span class="ar-text">اختار اللون</span></strong>
+                  <div class="product-color-options">
+                    ${colors.map((color, index) => `
+                      <label class="product-color-option ${index === selectedColorIndex ? 'active' : ''}">
+                        <input type="radio" name="productColor" value="${index}" ${index === selectedColorIndex ? 'checked' : ''}>
+                        <span class="product-color-dot" style="background:${escapeAttribute(color.hexCode)}"></span>
+                        <span>${escapeAttribute(color.colorName)}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
               <div class="detail-qty">
                 <button type="button" id="detailQtyMinus">-</button>
                 <strong id="detailQtyValue">${qty}</strong>
@@ -869,18 +908,27 @@ function openProductDetail(productId) {
                 render();
             });
         });
+        body.querySelectorAll('.product-color-option input').forEach(input => {
+            input.addEventListener('change', () => {
+                selectedColorIndex = parseInt(input.value, 10);
+                render();
+            });
+        });
         body.querySelector('#detailQtyMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); render(); });
         body.querySelector('#detailQtyPlus').addEventListener('click', () => { qty += 1; render(); });
         body.querySelector('#detailAddBtn').addEventListener('click', () => {
             const variant = variants[selectedIndex];
+            const selectedColor = colors[selectedColorIndex] || null;
             window.addToCart({
-                id: `${productId}__${variant.id || variant.label}`,
+                id: `${productId}__${variant.id || variant.label}${selectedColor ? `__${selectedColor.hexCode}` : ''}`,
                 nameEn,
                 nameAr,
                 price: parseFloat(variant.price),
                 quantity: qty,
                 img: product.imageUrl,
-                variantLabel: variant.label
+                variantLabel: variant.label,
+                colorName: selectedColor?.colorName || '',
+                hexCode: selectedColor?.hexCode || ''
             });
             modal.classList.remove('show');
             document.body.style.overflow = '';
@@ -1170,7 +1218,7 @@ function loadProducts() {
                 saleBadgeHtml = `
                     <div style="position: absolute; top: 10px; right: 10px; background: #C6A43F; color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 12px; font-weight: bold; z-index: 2;">
                         <span class="en-text">SALE</span>
-                        <span class="ar-text">تخفيض</span>
+                        <span class="ar-text">عروض</span>
                     </div>
                 `;
             } else {

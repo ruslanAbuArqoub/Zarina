@@ -13,6 +13,7 @@ const storage = getStorage(app);
 const ADMIN_EMAILS = ['googgermal@gmail.com', 'katia-abu-arqoub@admin.zarina'];
 const productsCol = collection(db, "products");
 const collectionsCol = collection(db, "collections");
+const savedColorsCol = collection(db, "savedColors");
 const ordersCol = collection(db, "orders");
 const statsDocRef = doc(db, 'site_data', 'stats');
 const announcementDocRef = doc(db, 'site_data', 'announcement');
@@ -436,12 +437,22 @@ document.addEventListener('DOMContentLoaded', () => {
             .modal-variants { background:#FCF8F0; border:1px solid #EADBC6; border-radius:14px; padding:1rem; margin-top:1rem; overflow-x:auto; }
             .modal-variants .variant-row { grid-template-columns: minmax(150px, 1.15fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) minmax(130px, 0.9fr) auto; }
             .modal-variants .form-control { padding: 10px 12px; }
+            .modal-colors { background:#fffaf2; border:1px solid #EADBC6; border-radius:14px; padding:1rem; margin-top:1rem; grid-column:1/-1; }
+            .color-manager-grid { display:grid; grid-template-columns:120px minmax(0,1fr); gap:10px; align-items:stretch; }
+            .color-manager-grid select, .color-manager-grid button { grid-column:1/-1; }
+            .color-manager-grid .form-control, .color-manager-grid .btn-small { min-height:48px; }
+            .color-manager-grid input[type="color"] { cursor:pointer; min-height:48px; min-width:0; width:100%; padding:6px; }
+            .selected-colors-list { display:flex; flex-wrap:wrap; gap:8px; min-height:34px; margin-top:10px; }
+            .admin-color-pill { align-items:center; background:#fff; border:1px solid #D9CBB5; border-radius:999px; display:inline-flex; gap:8px; padding:7px 10px; font-size:.9rem; font-weight:800; }
+            .admin-color-dot { border:1px solid rgba(0,0,0,.18); border-radius:50%; display:inline-block; height:18px; width:18px; }
+            .admin-color-remove { background:#F0EBE1; border:0; border-radius:50%; cursor:pointer; height:22px; line-height:1; width:22px; }
             @media (max-width: 720px) {
                 .zarina-modal { width: min(96vw, 620px); padding: 1.2rem; }
                 #editPriceForm { grid-template-columns: 1fr; }
                 .modal-image-preview { grid-template-columns: 1fr; }
                 .modal-image-preview img { width:100%; height:180px; }
                 .modal-variants .variant-row { grid-template-columns: 1fr; }
+                .color-manager-grid { grid-template-columns:1fr; }
                 .modal-actions { flex-direction: column; }
             }
         `;
@@ -497,6 +508,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div id="modalVariantsList"></div>
                             <button type="button" id="modalAddVariantBtn" class="btn-small"><i class="fas fa-plus"></i> إضافة خيار</button>
                         </div>
+                        <div class="modal-colors">
+                            <label style="display:block; margin-bottom:8px;">Product Colors / ألوان المنتج <small style="font-weight:400;">(اختياري)</small></label>
+                            <div class="color-manager-grid">
+                                <select id="modalSavedColorSelect" class="form-control">
+                                    <option value="">اختر لون محفوظ</option>
+                                </select>
+                                <input type="color" id="modalNewColorHex" class="form-control" value="#c6a43f" aria-label="Color hex">
+                                <input type="text" id="modalNewColorName" class="form-control" placeholder="اسم اللون مثل: ذهبي">
+                                <button type="button" id="modalAddNewColorBtn" class="btn-small"><i class="fas fa-plus"></i> إضافة لون</button>
+                            </div>
+                            <div id="modalSelectedProductColorsList" class="selected-colors-list"></div>
+                            <small class="modal-hint">اتركها فارغة إذا المنتج لا يحتاج ألوان.</small>
+                        </div>
                         <div class="modal-actions">
                             <button type="button" class="btn-cancel" id="btnCancelModal">إلغاء</button>
                             <button type="submit" class="btn-submit" id="btnSaveEditPrice">حفظ التعديلات</button>
@@ -536,6 +560,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // برمجة وظائف النافذة (فتح، إغلاق، حفظ)
+        bindSavedColorSelect(document.getElementById('modalSavedColorSelect'), 'modal');
+        document.getElementById('modalAddNewColorBtn')?.addEventListener('click', () => {
+            addNewSavedColor({
+                nameInput: document.getElementById('modalNewColorName'),
+                hexInput: document.getElementById('modalNewColorHex'),
+                target: 'modal'
+            });
+        });
+
         const modalOverlay = document.getElementById('priceEditModal');
         const form = document.getElementById('editPriceForm');
         const collectionModalOverlay = document.getElementById('collectionEditModal');
@@ -591,6 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     unitType: document.getElementById('modalUnitType').value,
                     imageUrl: imageUrl,
                     variants: variants,
+                    colors: selectedModalColors,
                     updatedAt: serverTimestamp()
                 });
                 closeModal();
@@ -642,6 +676,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let allProducts = [];
 let allCollections = [];
+let allSavedColors = [];
+let selectedProductColors = [];
+let selectedModalColors = [];
 const ADMIN_PRODUCTS_CACHE_KEY = 'zarinaAdminProductsCacheV2';
 const ADMIN_COLLECTIONS_CACHE_KEY = 'zarinaAdminCollectionsCacheV2';
 const ADMIN_CACHE_MAX_AGE = 1000 * 60 * 60 * 6;
@@ -673,6 +710,20 @@ function writeAdminCache(key, items) {
     const collectionsDatalist = document.getElementById('collectionsDatalist');
     const prodCollectionInput = document.getElementById('prodCollection');
     const prodCollectionSelect = document.getElementById('prodCollectionSelect');
+    const savedColorSelect = document.getElementById('savedColorSelect');
+    const newColorHexInput = document.getElementById('newColorHex');
+    const newColorNameInput = document.getElementById('newColorName');
+    const addNewColorBtn = document.getElementById('addNewColorBtn');
+    const selectedProductColorsList = document.getElementById('selectedProductColorsList');
+    const productColorsBox = document.querySelector('#addProductForm .product-colors-box');
+    const prodPriceInput = document.getElementById('prodPrice');
+    const prodPriceGroup = prodPriceInput?.closest('.form-group');
+    if (productColorsBox && prodPriceGroup && productColorsBox.parentElement === prodPriceGroup) {
+        prodPriceGroup.before(productColorsBox);
+    }
+    if (productColorsBox) {
+        productColorsBox.querySelector('label')?.classList.add('color-section-title');
+    }
 
     renderVariants('productVariantsList');
     document.getElementById('addVariantBtn')?.addEventListener('click', () => {
@@ -684,6 +735,10 @@ function writeAdminCache(key, items) {
         document.getElementById('modalVariantsList')?.insertAdjacentHTML('beforeend', variantRowHtml());
         const container = document.getElementById('modalVariantsList');
         container?.lastElementChild?.querySelector('.remove-variant-btn')?.addEventListener('click', (e) => e.currentTarget.closest('.variant-row')?.remove());
+    });
+    bindSavedColorSelect(savedColorSelect, 'add');
+    addNewColorBtn?.addEventListener('click', () => {
+        addNewSavedColor({ nameInput: newColorNameInput, hexInput: newColorHexInput, target: 'add' });
     });
 
     function escapeHtml(str) {
@@ -767,6 +822,113 @@ function writeAdminCache(key, items) {
                 };
             })
             .filter(Boolean);
+    }
+
+    function normalizeHexCode(value) {
+        const hex = (value || '').trim();
+        return /^#[0-9a-f]{6}$/i.test(hex) ? hex.toLowerCase() : '';
+    }
+
+    function normalizeColor(color) {
+        const colorName = (color?.colorName || color?.name || '').toString().trim();
+        const hexCode = normalizeHexCode(color?.hexCode || color?.hex || '');
+        return colorName && hexCode ? { colorName, hexCode } : null;
+    }
+
+    function hasColor(list, color) {
+        return list.some(item => normalizeName(item.colorName) === normalizeName(color.colorName) || item.hexCode === color.hexCode);
+    }
+
+    function addColorToList(target, color) {
+        const normalized = normalizeColor(color);
+        if (!normalized || hasColor(target, normalized)) return false;
+        target.push(normalized);
+        return true;
+    }
+
+    function renderSelectedColors(target = 'add') {
+        const list = target === 'modal' ? selectedModalColors : selectedProductColors;
+        const container = target === 'modal'
+            ? document.getElementById('modalSelectedProductColorsList')
+            : selectedProductColorsList;
+        if (!container) return;
+        container.innerHTML = list.length ? list.map((color, index) => `
+            <span class="admin-color-pill">
+                <span class="admin-color-dot" style="background:${escapeHtml(color.hexCode)}"></span>
+                ${escapeHtml(color.colorName)}
+                <small dir="ltr">${escapeHtml(color.hexCode)}</small>
+                <button type="button" class="admin-color-remove" data-index="${index}" aria-label="Remove color">x</button>
+            </span>
+        `).join('') : '<small class="collection-note">لا يوجد ألوان مختارة لهذا المنتج.</small>';
+        container.querySelectorAll('.admin-color-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                list.splice(Number(btn.dataset.index), 1);
+                renderSelectedColors(target);
+            });
+        });
+    }
+
+    function populateSavedColorSelects() {
+        const selects = [savedColorSelect, document.getElementById('modalSavedColorSelect')].filter(Boolean);
+        const options = ['<option value="">اختر لون محفوظ</option>'];
+        allSavedColors
+            .map(normalizeColor)
+            .filter(Boolean)
+            .sort((a, b) => a.colorName.localeCompare(b.colorName, 'ar'))
+            .forEach(color => {
+                options.push(`<option value="${escapeHtml(color.hexCode)}" data-name="${escapeHtml(color.colorName)}">${escapeHtml(color.colorName)} (${escapeHtml(color.hexCode)})</option>`);
+            });
+        selects.forEach(select => { select.innerHTML = options.join(''); });
+    }
+
+    function bindSavedColorSelect(select, target = 'add') {
+        if (!select || select.dataset.colorBound === 'true') return;
+        select.dataset.colorBound = 'true';
+        select.addEventListener('change', () => {
+            const option = select.selectedOptions?.[0];
+            const color = normalizeColor({ colorName: option?.dataset.name, hexCode: select.value });
+            const list = target === 'modal' ? selectedModalColors : selectedProductColors;
+            if (color && addColorToList(list, color)) renderSelectedColors(target);
+            select.value = '';
+        });
+    }
+
+    async function addNewSavedColor({ nameInput, hexInput, target = 'add' }) {
+        const color = normalizeColor({ colorName: nameInput?.value, hexCode: hexInput?.value });
+        if (!color) {
+            alert('اكتب اسم لون صحيح واختار Hex صحيح.');
+            return;
+        }
+
+        const exists = allSavedColors.some(item => {
+            const saved = normalizeColor(item);
+            return saved && (normalizeName(saved.colorName) === normalizeName(color.colorName) || saved.hexCode === color.hexCode);
+        });
+        if (!exists) {
+            await addDoc(savedColorsCol, {
+                colorName: color.colorName,
+                hexCode: color.hexCode,
+                createdAt: serverTimestamp()
+            });
+            allSavedColors.push(color);
+            populateSavedColorSelects();
+        }
+
+        const list = target === 'modal' ? selectedModalColors : selectedProductColors;
+        addColorToList(list, color);
+        renderSelectedColors(target);
+        if (nameInput) nameInput.value = '';
+        if (hexInput) hexInput.value = '#c6a43f';
+    }
+
+    async function loadSavedColors() {
+        const snapshot = await getDocs(savedColorsCol);
+        allSavedColors = [];
+        snapshot.forEach(docSnap => {
+            const color = normalizeColor(docSnap.data());
+            if (color) allSavedColors.push({ id: docSnap.id, ...color });
+        });
+        populateSavedColorSelects();
     }
 
     async function ensureCollectionExists(nameAr, nameEn = '') {
@@ -1039,6 +1201,9 @@ function writeAdminCache(key, items) {
         document.getElementById('modalLongDescEn').value = product.longDescEn || '';
         document.getElementById('modalUnitType').value = product.unitType || 'g';
         renderVariants('modalVariantsList', Array.isArray(product.variants) ? product.variants : []);
+        selectedModalColors = Array.isArray(product.colors) ? product.colors.map(normalizeColor).filter(Boolean) : [];
+        populateSavedColorSelects();
+        renderSelectedColors('modal');
         
         const modal = document.getElementById('priceEditModal');
         modal.style.display = 'flex';
@@ -1124,6 +1289,10 @@ function writeAdminCache(key, items) {
     }
     
     loadProductsToTable(); 
+    loadSavedColors().then(() => {
+        bindSavedColorSelect(savedColorSelect, 'add');
+        renderSelectedColors('add');
+    }).catch((error) => console.warn('Could not load saved colors:', error));
 
     async function loadCollectionsToTable() {
         const tbody = document.getElementById('adminCollectionsTable');
@@ -1256,6 +1425,7 @@ function writeAdminCache(key, items) {
             longDescEn: document.getElementById('prodLongDescEn').value.trim(),
             unitType: document.getElementById('prodUnitType').value,
             variants: variants,
+            colors: selectedProductColors,
             price: parseFloat(document.getElementById('prodPrice').value),
             oldPrice: oldPriceValue,
             imageUrl: '',
@@ -1287,6 +1457,8 @@ function writeAdminCache(key, items) {
             
             alert("تم إضافة المنتج للمتجر بنجاح! 🎉");
             addForm.reset(); 
+            selectedProductColors = [];
+            renderSelectedColors('add');
             document.getElementById('prodImgPreviewWrap')?.classList.remove('active');
             renderVariants('productVariantsList');
             loadProductsToTable(); 

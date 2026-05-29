@@ -58,6 +58,10 @@ function itemOptionLabel(item) {
     return item.variantLabel || item.selectedVariant || item.optionLabel || '';
 }
 
+function itemColorLabel(item) {
+    return item.colorName || item.selectedColor || '';
+}
+
 function itemDisplayName(item) {
     return item.nameAr || item.nameEn || item.name || 'منتج';
 }

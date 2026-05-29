@@ -870,11 +870,12 @@
     return items.map((item, index) => {
       const name = item.nameAr || item.nameEn || item.name || 'Product';
       const variant = item.variantLabel ? ` - ${item.variantLabel}` : '';
+      const color = item.colorName ? ` - Color: ${item.colorName}` : '';
       const quantity = Number(item.quantity || 1);
       const price = Number(item.price || 0);
       const lineTotal = price * quantity;
 
-      return `${index + 1}. ${escapeTelegramHtml(name + variant)}\n   Qty: ${quantity} | ${lineTotal.toFixed(2)} JD`;
+      return `${index + 1}. ${escapeTelegramHtml(name + variant + color)}\n   Qty: ${quantity} | ${lineTotal.toFixed(2)} JD`;
     }).join('\n');
   }
 
