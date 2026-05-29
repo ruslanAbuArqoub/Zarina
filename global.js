@@ -502,6 +502,38 @@ function getProductColors(product) {
     return Array.isArray(product.colors) ? product.colors.map(normalizeProductColor).filter(Boolean) : [];
 }
 
+function productTimestampValue(product) {
+    const value = product?.createdAt || product?.updatedAt;
+    if (!value) return 0;
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
+    if (value.seconds) return value.seconds * 1000;
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function isNewProduct(product) {
+    const createdTime = productTimestampValue({ createdAt: product?.createdAt });
+    if (!createdTime) return false;
+    return Date.now() - createdTime < 1000 * 60 * 60 * 48;
+}
+
+function catalogSkeletonCards(count = 8) {
+    return Array.from({ length: count }).map(() => `
+        <article class="product-card product-card-skeleton" aria-hidden="true">
+            <div class="skeleton-media"></div>
+            <div class="product-info">
+                <span class="skeleton-line skeleton-line-title"></span>
+                <span class="skeleton-line skeleton-line-short"></span>
+                <span class="skeleton-line"></span>
+                <span class="skeleton-line skeleton-line-short"></span>
+                <span class="skeleton-line"></span>
+                <span class="skeleton-line skeleton-line-price"></span>
+                <span class="skeleton-button"></span>
+            </div>
+        </article>
+    `).join('');
+}
+
 function reviewDateValue(review) {
     const createdAt = review.createdAt;
     if (!createdAt) return 0;
@@ -511,8 +543,42 @@ function reviewDateValue(review) {
     return Number.isNaN(parsed) ? 0 : parsed;
 }
 
+function normalizeProductName(value) {
+    return (value ?? '')
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآا]/g, 'ا')
+        .replace(/[ة]/g, 'ه')
+        .replace(/\s+/g, ' ');
+}
+
+function reviewMatchesProduct(review, productId, product) {
+    if (review.productId === productId) return true;
+    if (!product) return false;
+
+    const productNames = [
+        product.nameEn,
+        product.nameAr,
+        product.name
+    ].map(normalizeProductName).filter(Boolean);
+
+    const reviewNames = [
+        review.productNameEn,
+        review.productNameAr
+    ].map(normalizeProductName).filter(Boolean);
+
+    return reviewNames.some(reviewName => productNames.includes(reviewName));
+}
+
 function getProductReviewStats(productId) {
-    const reviews = (window.zarinaReviewsByProduct?.[productId] || []).filter(review => review && typeof review === 'object');
+    const directReviews = (window.zarinaReviewsByProduct?.[productId] || []).filter(review => review && typeof review === 'object');
+    const product = window.zarinaProductsById?.[productId];
+    const nameMatchedReviews = (window.zarinaLatestReviews || [])
+        .filter(review => review && typeof review === 'object' && reviewMatchesProduct(review, productId, product));
+    const reviews = Array.from(
+        new Map([...directReviews, ...nameMatchedReviews].map(review => [review.id || `${review.productId}-${review.createdAt}`, review])).values()
+    );
     if (!reviews.length) return { average: 0, count: 0, reviews: [] };
     const total = reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0);
     return {
@@ -602,6 +668,7 @@ function renderProductStructuredData() {
 
 function renderProductRatingBadges() {
     document.querySelectorAll('.product-rating-badge[data-product-id]').forEach(badge => {
+        if (badge.dataset.staticBadge === 'new') return;
         const stats = getProductReviewStats(badge.dataset.productId);
         badge.innerHTML = stats.count
             ? `${starsHtml(stats.average, true)} <span>${stats.average.toFixed(1)} (${stats.count})</span>`
@@ -1060,6 +1127,18 @@ function initCatalogSearch() {
     if (!productsContainer || !searchInput) return;
 
     let activeFilter = 'all';
+    const categoryAliases = {
+        'skin-care': 'skin',
+        skincare: 'skin',
+        skin: 'skin',
+        'hair-care': 'hair',
+        haircare: 'hair',
+        hair: 'hair',
+        relaxation: 'relaxation',
+        relax: 'relaxation',
+        offers: 'sale',
+        sale: 'sale'
+    };
 
     function applyCatalogFilters() {
         const query = cleanCatalogText(searchInput.value);
@@ -1115,12 +1194,26 @@ function initCatalogSearch() {
         });
     });
 
+    const params = new URLSearchParams(window.location.search);
+    const requestedCategory = cleanCatalogText(params.get('category') || params.get('filter'));
+    const mappedCategory = categoryAliases[requestedCategory] || requestedCategory;
+    if (mappedCategory) {
+        const requestedButton = Array.from(filterButtons).find(button => cleanCatalogText(button.dataset.filter) === mappedCategory);
+        if (requestedButton) {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            requestedButton.classList.add('active');
+            activeFilter = cleanCatalogText(requestedButton.dataset.filter || 'all');
+        }
+    }
+
     applyCatalogFilters();
 }
 
 function loadProducts() {
     const productsContainer = document.getElementById('products-container'); 
     if(!productsContainer) return;
+    const productsMode = productsContainer.dataset.productsMode || 'catalog';
+    const maxProducts = productsMode === 'new-arrivals' ? 8 : Infinity;
 
     productsContainer.innerHTML = `
         <div class="catalog-no-results show" style="display:block; grid-column: 1 / -1;">
@@ -1131,17 +1224,26 @@ function loadProducts() {
     `;
 
     const productsCollection = collection(db, "products");
+    productsContainer.innerHTML = catalogSkeletonCards(Number.isFinite(maxProducts) ? maxProducts : 8);
 
     onSnapshot(productsCollection, (querySnapshot) => {
         
         let htmlString = '';
         let index = 0; 
         
+        const visibleDocs = [];
         querySnapshot.forEach((docSnap) => {
             const product = docSnap.data();
-            
-            if (product.isVisible === false) return; 
-            window.zarinaProductsById[docSnap.id] = { id: docSnap.id, ...product };
+            if (product.isVisible === false) return;
+            visibleDocs.push({ id: docSnap.id, product });
+        });
+
+        if (productsMode === 'new-arrivals') {
+            visibleDocs.sort((a, b) => productTimestampValue(b.product) - productTimestampValue(a.product));
+        }
+
+        visibleDocs.slice(0, maxProducts).forEach(({ id, product }) => {
+            window.zarinaProductsById[id] = { id, ...product };
             
             const nameEn = product.nameEn || product.name || 'Unnamed';
             const nameAr = product.nameAr || product.name || 'بدون اسم';
@@ -1190,6 +1292,12 @@ function loadProducts() {
 
             // --- معالجة عرض السعر والخصم ---
             let priceHtml = '';
+            const newBadgeHtml = isNewProduct(product) ? `
+                <div class="product-new-badge">
+                    <span class="en-text">NEW</span>
+                    <span class="ar-text">&#1580;&#1583;&#1610;&#1583;</span>
+                </div>
+            ` : '';
             let saleBadgeHtml = ''; // شريط الخصم على الصورة
             
             if (saleVariants.length > 0) {
@@ -1227,8 +1335,9 @@ function loadProducts() {
             }
 
             htmlString += `
-                <div class="product-card" id="product-${escapeAttribute(docSnap.id)}" role="button" tabindex="0" aria-label="${escapeAttribute(`Open ${nameEn} product details`)}" data-product-id="${docSnap.id}" data-index="${index}" data-price="${escapeAttribute(displayPrice)}" data-name="${escapeAttribute(nameEn)}" data-tags="${escapeAttribute(filterTags)}" data-search="${escapeAttribute(searchableText)}" style="animation-delay: ${index * 0.05}s; position: relative;">
+                <div class="product-card" id="product-${escapeAttribute(id)}" role="button" tabindex="0" aria-label="${escapeAttribute(`Open ${nameEn} product details`)}" data-product-id="${id}" data-index="${index}" data-price="${escapeAttribute(displayPrice)}" data-name="${escapeAttribute(nameEn)}" data-tags="${escapeAttribute(filterTags)}" data-search="${escapeAttribute(searchableText)}" style="animation-delay: ${index * 0.05}s; position: relative;">
                     ${saleBadgeHtml}
+                    ${newBadgeHtml}
                     <img class="product-img" src="${escapeAttribute(product.imageUrl || 'https://placehold.co/600x420?text=ZARINA')}" alt="${escapeAttribute(imageAlt)}" loading="lazy" decoding="async">
                     <div class="product-info">
                         
@@ -1243,7 +1352,7 @@ function loadProducts() {
                         </div>
                         
                         ${tagsHtml}
-                        <div class="product-rating-badge" data-product-id="${docSnap.id}">
+                        <div class="product-rating-badge" data-product-id="${id}">
                             <i class="far fa-star"></i>
                             <span class="en-text">New</span>
                             <span class="ar-text">جديد</span>
@@ -1256,7 +1365,7 @@ function loadProducts() {
                         
                         ${priceHtml}
                         
-                        <button class="add-to-cart firecart-btn" data-id="${docSnap.id}" data-name-en="${nameEn}" data-name-ar="${nameAr}" data-price="${product.price}" data-img="${product.imageUrl}">
+                        <button class="add-to-cart firecart-btn" data-id="${id}" data-name-en="${nameEn}" data-name-ar="${nameAr}" data-price="${product.price}" data-img="${product.imageUrl}">
                             <i class="fas fa-shopping-bag"></i> 
                             <span class="en-text">Choose size</span>
                             <span class="ar-text">اختار الكمية</span>

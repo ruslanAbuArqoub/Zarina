@@ -88,6 +88,9 @@
       margin: 12px auto 0;
       border-radius: 4px;
     }
+    .featured .section-title span:nth-child(n+3) {
+      display: none !important;
+    }
     .product-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -283,11 +286,14 @@
     </div>
 
     <div class="featured">
-      <h2 class="section-title reveal">
+      <h2 class="section-title reveal">المنتجات الاعلى تقييما</h2>
+      <h2 hidden>
+        <span class="en-text">Customer trust: top rated</span>
+        <span class="ar-text">&#1579;&#1602;&#1577; &#1593;&#1605;&#1604;&#1575;&#1574;&#1606;&#1575;: &#1575;&#1604;&#1571;&#1593;&#1604;&#1609; &#1578;&#1602;&#1610;&#1610;&#1605;&#1575;</span>
         <span class="en-text">✨ Signature remedies</span>
         <span class="ar-text">✨ منتجاتنا المميزة</span>
       </h2>
-      <div class="product-grid" id="products-container"></div>
+      <div id="top-rated-container" class="products-grid product-grid"></div>
     </div>
   </div>
 </main>
@@ -347,6 +353,7 @@
 <script type="module" src="firebase-config.js"></script>
 <script type="module" src="seo.js"></script>
 <script type="module" src="global.js"></script>
+<script type="module" src="about.js"></script>
 
 <script>
   // Scroll reveal animation using Intersection Observer

@@ -420,6 +420,9 @@
       margin: 12px auto 0;
       border-radius: 4px;
     }
+    .products-section .section-title .ar-text + .ar-text {
+      display: none !important;
+    }
     .products-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -797,14 +800,16 @@
 
   <div class="container products-section" id="shopProducts">
     <h2 class="section-title">
-      <span class="en-text">Fresh from the apothecary</span>
+      <span class="en-text">New arrivals from Zarina</span>
+      <span class="ar-text">احدث المنتجات</span>
       <span class="ar-text">مختارات زارينا الطبيعية</span>
     </h2>
+    <!-- Homepage intentionally shows new arrivals only; search and filters live on Apothecary.html. -->
+    <!--
     <section class="catalog-tools" aria-label="Product search and filters">
       <div class="catalog-search-row">
         <div class="catalog-search-box">
           <i class="fas fa-search"></i>
-          <input type="search" id="catalogSearchInput" class="catalog-search-input" placeholder="Search natural products... | ابحث عن المنتجات الطبيعية...">
         </div>
         <select id="catalogSortSelect" class="catalog-sort-select" aria-label="Sort products">
           <option value="featured">Featured | المميزة</option>
@@ -832,7 +837,8 @@
         <span id="catalogResultCount" class="catalog-result-count">0 products</span>
       </div>
     </section>
-    <div id="products-container" class="products-grid"></div>
+    -->
+    <div id="products-container" class="products-grid" data-products-mode="new-arrivals"></div>
     <div id="catalogNoResults" class="catalog-no-results">
       <span class="en-text">No products match your search yet.</span>
       <span class="ar-text">ما في منتجات مطابقة للبحث حالياً.</span>
@@ -958,11 +964,13 @@
   document.querySelectorAll('[data-home-filter]').forEach(card => {
     card.addEventListener('click', () => {
       const filter = card.dataset.homeFilter;
-      const filterButton = document.querySelector(`.catalog-filter-btn[data-filter="${filter}"]`);
-      scrollToProducts();
-      if (filterButton) {
-        setTimeout(() => filterButton.click(), 260);
-      }
+      const categoryMap = {
+        skin: 'skin-care',
+        hair: 'hair-care',
+        relaxation: 'relaxation',
+        sale: 'sale'
+      };
+      window.location.href = `Apothecary.html?category=${encodeURIComponent(categoryMap[filter] || filter)}`;
     });
   });
 
@@ -971,6 +979,9 @@
     observer.observe(productsContainer, { childList: true });
     updateHomeStats();
   }
+</script>
+<script>
+(function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="w4XNPeM46V6Ng1h8IzS0F";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
 </script>
 </body>
 </html>

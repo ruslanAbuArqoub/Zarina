@@ -945,9 +945,7 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
   const verifiedPhonePill = document.getElementById('verifiedPhonePill');
   const recaptchaContainerHost = document.getElementById('recaptcha-container');
   const jordanPhoneRegex = /^07[789]\d{7}$/;
-  // TEMP: phone OTP verification is disabled while testing checkout.
-  // Set this back to false to require SMS verification before placing orders.
-  const TEMP_DISABLE_PHONE_OTP = true;
+  const TEMP_DISABLE_PHONE_OTP = false;
   let recaptchaVerifier = null;
   let recaptchaRenderPromise = null;
   let recaptchaElement = null;

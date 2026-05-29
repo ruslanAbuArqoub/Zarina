@@ -1,8 +1,10 @@
-import { collection, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getMessaging, getToken, isSupported, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
 const ADMIN_ORDER_NOTIFICATIONS_FLAG = '__zarinaAdminOrderNotificationsStarted';
 const NOTIFIED_ORDER_IDS_KEY = 'zarinaAdminNotifiedOrderIdsV1';
 const NOTIFICATION_PERMISSION_KEY = 'zarinaAdminNotificationPermissionAskedV1';
+const FCM_PUBLIC_VAPID_KEY = 'BGsFhQVkLx9DoMajUimyAuwVSIBDqX41EcHrFtrmzO54u71na-bCFtfpT4ssYRIqaErATD9E6tDFzNwrYmFQHxw';
 
 const ADMIN_NAMES_BY_EMAIL = {
     'katia-abu-arqoub@admin.zarina': 'كاتيا',
@@ -65,7 +67,54 @@ function showAdminToast(message, detail = '') {
     window.setTimeout(() => toast.remove(), 9000);
 }
 
-function showPermissionPrompt(adminName) {
+function canUseCloudMessaging() {
+    return FCM_PUBLIC_VAPID_KEY && !FCM_PUBLIC_VAPID_KEY.includes('PASTE_YOUR');
+}
+
+async function registerAdminPushDevice(db, user, adminName) {
+    if (!canUseCloudMessaging()) {
+        showAdminToast('إشعارات الهاتف تحتاج مفتاح Firebase', 'أضف Web Push certificate key داخل admin-notifications.js مكان FCM_PUBLIC_VAPID_KEY.');
+        return;
+    }
+
+    const supported = await isSupported().catch(() => false);
+    if (!supported || !('serviceWorker' in navigator)) {
+        showAdminToast('هذا المتصفح لا يدعم إشعارات الخلفية', 'على iPhone لازم يكون الموقع مضاف للشاشة الرئيسية ومفتوح من الأيقونة حتى تعمل Push Notifications.');
+        return;
+    }
+
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const messaging = getMessaging();
+    const token = await getToken(messaging, {
+        vapidKey: FCM_PUBLIC_VAPID_KEY,
+        serviceWorkerRegistration: registration
+    });
+
+    if (!token) {
+        showAdminToast('لم يتم إنشاء رمز الإشعارات', 'تأكدي من السماح للإشعارات من إعدادات المتصفح.');
+        return;
+    }
+
+    await setDoc(doc(db, 'adminTokens', token), {
+        token,
+        adminName,
+        email: user?.email || '',
+        uid: user?.uid || '',
+        userAgent: navigator.userAgent,
+        platform: navigator.platform || '',
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    onMessage(messaging, (payload) => {
+        const title = payload.notification?.title || payload.data?.title || `🚨 مرحبا ${adminName}`;
+        const body = payload.notification?.body || payload.data?.body || 'اجاكِ طلب جديد على زارينا.';
+        showAdminToast(title, body);
+    });
+
+    showAdminToast(`تم ربط إشعارات الهاتف يا ${adminName}`, 'أي طلب جديد ممكن يوصل كإشعار على الجهاز بعد تفعيل الإرسال من Cloud Function.');
+}
+
+function showPermissionPrompt(db, user, adminName) {
     if (!('Notification' in window) || Notification.permission !== 'default') return;
     if (sessionStorage.getItem(NOTIFICATION_PERMISSION_KEY) === 'shown') return;
     sessionStorage.setItem(NOTIFICATION_PERMISSION_KEY, 'shown');
@@ -108,6 +157,10 @@ function showPermissionPrompt(adminName) {
                 badge: 'zarina-logo-mark.png',
                 tag: 'zarina-admin-notifications-enabled'
             });
+            registerAdminPushDevice(db, user, adminName).catch((error) => {
+                console.warn('Admin FCM registration failed:', error);
+                showAdminToast('تعذر ربط إشعارات الهاتف', 'الإشعارات داخل الموقع ستبقى تعمل، لكن إشعارات الجهاز تحتاج إعداد FCM.');
+            });
         }
     });
     prompt.querySelector('#dismissZarinaNotifications')?.addEventListener('click', () => prompt.remove());
@@ -143,7 +196,7 @@ export function initAdminOrderNotifications(db, user) {
     window[ADMIN_ORDER_NOTIFICATIONS_FLAG] = true;
 
     const adminName = getAdminName(user);
-    showPermissionPrompt(adminName);
+    showPermissionPrompt(db, user, adminName);
 
     let initialSnapshotLoaded = false;
     const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));

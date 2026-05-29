@@ -122,6 +122,9 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 2rem;
     }
+    .featured-products .section-title span:nth-child(n+3) {
+      display: none !important;
+    }
     .product-card {
       background: var(--off-white, #FFFEF9);
       border-radius: 24px;
@@ -361,10 +364,10 @@
     <div class="featured-products">
       <h2 class="section-title reveal">
         <span class="en-text">✨ Apothecary essentials</span>
-        <span class="ar-text">✨ أساسيات عنايتك</span>
+        <span class="ar-text">المنتجات الاكثر طلبا</span>
       </h2>
       <!-- هون رح تنزل منتجات الفايربيس تلقائياً -->
-      <div class="featured-grid" id="products-container"></div>
+      <div class="featured-grid" id="best-selling-products" data-featured-products data-order-field="salesCount" data-limit="4"></div>
     </div>
 
     <div class="cta-banner reveal">
@@ -449,5 +452,6 @@
 <script type="module" src="firebase-config.js"></script>
 <script type="module" src="seo.js"></script>
 <script type="module" src="global.js"></script>
+<script type="module" src="our-story.js"></script>
 </body>
 </html>

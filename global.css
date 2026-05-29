@@ -1278,6 +1278,19 @@ html[data-theme="dark"] .badge {
   color: #D8B94D !important;
 }
 
+html[data-theme="dark"] .product-new-badge {
+  background: rgba(24, 29, 22, 0.9);
+  border-color: rgba(216, 185, 77, 0.48);
+  color: #D8B94D;
+}
+
+html[data-theme="dark"] .product-card-skeleton .skeleton-media,
+html[data-theme="dark"] .product-card-skeleton .skeleton-line,
+html[data-theme="dark"] .product-card-skeleton .skeleton-button {
+  background: linear-gradient(90deg, #20271D 0%, #303A2B 42%, #20271D 78%);
+  background-size: 220% 100%;
+}
+
 html[data-theme="dark"] .add-to-cart,
 html[data-theme="dark"] .checkout-btn,
 html[data-theme="dark"] .btn-primary,
@@ -1410,6 +1423,14 @@ html body .product-card .product-desc {
   line-height: 1.5;
 }
 
+html body .product-card.featured-live-card .product-desc {
+  color: #5C5B57;
+  display: -webkit-box !important;
+  min-height: 3.2rem;
+  opacity: 1;
+  visibility: visible;
+}
+
 html body .product-card .price {
   align-items: center;
   align-self: center;
@@ -1424,6 +1445,74 @@ html body .product-card .add-to-cart {
   margin-top: 0 !important;
   min-height: 42px;
   width: 100%;
+}
+
+.product-new-badge {
+  align-items: center;
+  background: rgba(255, 254, 249, 0.94);
+  border: 1px solid rgba(198, 164, 63, 0.62);
+  border-radius: 999px;
+  box-shadow: 0 10px 22px -16px rgba(31, 30, 26, 0.5);
+  color: var(--forest-green, #2F5D3A);
+  display: inline-flex;
+  font-size: clamp(0.72rem, 1.8vw, 0.82rem);
+  font-weight: 900;
+  left: 12px;
+  letter-spacing: 0 !important;
+  line-height: 1;
+  padding: 0.48rem 0.72rem;
+  position: absolute;
+  top: 12px;
+  z-index: 3;
+}
+
+.product-card-skeleton {
+  pointer-events: none;
+}
+
+.product-card-skeleton .skeleton-media,
+.product-card-skeleton .skeleton-line,
+.product-card-skeleton .skeleton-button {
+  background: linear-gradient(90deg, #EFE6D8 0%, #F8F1E7 42%, #EFE6D8 78%);
+  background-size: 220% 100%;
+  animation: zarinaSkeleton 1.25s ease-in-out infinite;
+  border-radius: 999px;
+  display: block;
+}
+
+.product-card-skeleton .skeleton-media {
+  border-radius: inherit inherit 0 0;
+  height: 240px;
+}
+
+.product-card-skeleton .skeleton-line {
+  height: 13px;
+  width: 100%;
+}
+
+.product-card-skeleton .skeleton-line-title {
+  height: 22px;
+  width: 78%;
+}
+
+.product-card-skeleton .skeleton-line-short {
+  width: 56%;
+}
+
+.product-card-skeleton .skeleton-line-price {
+  height: 20px;
+  width: 38%;
+}
+
+.product-card-skeleton .skeleton-button {
+  align-self: end;
+  height: 42px;
+  width: 100%;
+}
+
+@keyframes zarinaSkeleton {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
 }
 
 /* ========================================= */
