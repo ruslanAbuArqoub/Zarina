@@ -953,6 +953,7 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
   let confirmationResult = null;
   let isSendingOtp = false;
   let otpRetryBlockedUntil = Number(localStorage.getItem('zarinaOtpRetryBlockedUntil') || 0);
+  let otpRetryReason = localStorage.getItem('zarinaOtpRetryReason') || 'cooldown';
   let otpRetryCountdownTimer = null;
   let verifiedPhoneNumber = '';
   let verifiedLocalPhone = '';
@@ -1001,6 +1002,8 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
   function clearOtpRetryBlock() {
     otpRetryBlockedUntil = 0;
     localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+    localStorage.removeItem('zarinaOtpRetryReason');
+    otpRetryReason = 'cooldown';
     if (otpRetryCountdownTimer) {
       window.clearInterval(otpRetryCountdownTimer);
       otpRetryCountdownTimer = null;
@@ -1024,7 +1027,11 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
       sendOtpBtn.disabled = true;
       sendOtpBtn.innerHTML = `<i class="fas fa-clock"></i><span class="en-text">Retry in ${timeLeft}</span><span class="ar-text">&#1575;&#1604;&#1605;&#1581;&#1575;&#1608;&#1604;&#1577; &#1576;&#1593;&#1583; ${timeLeft}</span>`;
     }
-    setVerificationStatus('error', `&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1591;&#1604;&#1576;&#1575;&#1578; &#1603;&#1579;&#1610;&#1585;&#1577;. &#1581;&#1575;&#1608;&#1604; &#1576;&#1593;&#1583; ${timeLeft}.`, `Too many attempts. Try again in ${timeLeft}.`);
+    if (otpRetryReason === 'rate-limit') {
+      setVerificationStatus('error', `&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1591;&#1604;&#1576;&#1575;&#1578; &#1603;&#1579;&#1610;&#1585;&#1577;. &#1581;&#1575;&#1608;&#1604; &#1576;&#1593;&#1583; ${timeLeft}.`, `Too many attempts. Try again in ${timeLeft}.`);
+    } else {
+      setVerificationStatus('', `&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583;. &#1610;&#1605;&#1603;&#1606;&#1603; &#1591;&#1604;&#1576; &#1603;&#1608;&#1583; &#1580;&#1583;&#1610;&#1583; &#1576;&#1593;&#1583; ${timeLeft}.`, `OTP sent. You can request a new code in ${timeLeft}.`);
+    }
   }
 
   function startOtpRetryCountdown() {
@@ -1035,9 +1042,11 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     otpRetryCountdownTimer = window.setInterval(updateOtpRetryCountdown, 1000);
   }
 
-  function blockOtpRetry(milliseconds) {
+  function blockOtpRetry(milliseconds, reason = 'cooldown') {
     otpRetryBlockedUntil = Date.now() + milliseconds;
+    otpRetryReason = reason;
     localStorage.setItem('zarinaOtpRetryBlockedUntil', String(otpRetryBlockedUntil));
+    localStorage.setItem('zarinaOtpRetryReason', otpRetryReason);
     startOtpRetryCountdown();
   }
 
@@ -1110,6 +1119,8 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     if (otpRetryBlockedUntil && retryMs <= 0) {
       otpRetryBlockedUntil = 0;
       localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+      localStorage.removeItem('zarinaOtpRetryReason');
+      otpRetryReason = 'cooldown';
       retryMs = 0;
     }
     if (retryMs > 0) {
@@ -1142,13 +1153,14 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
       otpSentToPhone = localPhone;
       if (otpRow) otpRow.classList.add('show');
       if (otpCodeInput) otpCodeInput.focus();
+      blockOtpRetry(120000);
       setVerificationStatus('success', 'تم إرسال الكود برسالة SMS. أدخله للتأكيد.', 'OTP sent by SMS. Enter it to verify.');
     } catch (error) {
       console.error('Phone OTP send failed:', error);
       confirmationResult = null;
       resetRecaptchaVerifier();
       if (isTooManyRequestsError(error)) {
-        blockOtpRetry(120000);
+        blockOtpRetry(120000, 'rate-limit');
         setVerificationStatus('error', 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø·Ù„Ø¨Ø§Øª ÙƒØ«ÙŠØ±Ø©. Ø§Ù†ØªØ¸Ø± Ø¯Ù‚ÙŠÙ‚ØªÙŠÙ† Ø«Ù… Ø¬Ø±Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.', 'Too many attempts. Wait 2 minutes, then try again.');
       } else {
       setVerificationStatus('error', 'تعذر إرسال الكود. تأكد من الرقم أو حاول بعد قليل.', 'Could not send OTP. Check the number or try again shortly.');
@@ -1172,6 +1184,8 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
     if (otpRetryBlockedUntil && retryMs <= 0) {
       otpRetryBlockedUntil = 0;
       localStorage.removeItem('zarinaOtpRetryBlockedUntil');
+      localStorage.removeItem('zarinaOtpRetryReason');
+      otpRetryReason = 'cooldown';
       retryMs = 0;
     }
     if (retryMs > 0) {
@@ -1203,13 +1217,14 @@ ${escapeTelegramHtml(orderDetails.orderNotes || 'No notes')}
       otpSentToPhone = localPhone;
       if (otpRow) otpRow.classList.add('show');
       if (otpCodeInput) otpCodeInput.focus();
+      blockOtpRetry(120000);
       setVerificationStatus('success', '&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583; &#1576;&#1585;&#1587;&#1575;&#1604;&#1577; SMS. &#1571;&#1583;&#1582;&#1604;&#1607; &#1604;&#1604;&#1578;&#1571;&#1603;&#1610;&#1583;.', 'OTP sent by SMS. Enter it to verify.');
     } catch (error) {
       console.error('Phone OTP send failed:', error);
       confirmationResult = null;
       resetRecaptchaVerifier();
       if (isTooManyRequestsError(error)) {
-        blockOtpRetry(120000);
+        blockOtpRetry(120000, 'rate-limit');
         setVerificationStatus('error', '&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1591;&#1604;&#1576;&#1575;&#1578; &#1603;&#1579;&#1610;&#1585;&#1577;. &#1575;&#1606;&#1578;&#1592;&#1585; &#1583;&#1602;&#1610;&#1602;&#1578;&#1610;&#1606; &#1579;&#1605; &#1580;&#1585;&#1576; &#1605;&#1585;&#1577; &#1571;&#1582;&#1585;&#1609;.', 'Too many attempts. Wait 2 minutes, then try again.');
       } else {
         setVerificationStatus('error', '&#1578;&#1593;&#1584;&#1585; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1603;&#1608;&#1583; &#1605;&#1606; Firebase. &#1575;&#1606;&#1578;&#1592;&#1585; &#1602;&#1604;&#1610;&#1604;&#1575; &#1579;&#1605; &#1581;&#1575;&#1608;&#1604; &#1605;&#1585;&#1577; &#1571;&#1582;&#1585;&#1609;.', 'Could not send OTP. Firebase refused the request; wait a bit and try again.');

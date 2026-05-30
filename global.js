@@ -381,6 +381,7 @@ window.zarinaReviewsByProduct = window.zarinaReviewsByProduct || {};
 window.zarinaLatestReviews = window.zarinaLatestReviews || [];
 const PRODUCTS_CACHE_KEY = 'zarinaProductsCacheV2';
 const PRODUCTS_CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
+const NEW_PRODUCT_MAX_AGE = 1000 * 60 * 60 * 48;
 const announcementDocRef = doc(db, 'site_data', 'announcement');
 
 function readLocalCache(key, maxAge = PRODUCTS_CACHE_MAX_AGE) {
@@ -514,7 +515,7 @@ function productTimestampValue(product) {
 function isNewProduct(product) {
     const createdTime = productTimestampValue({ createdAt: product?.createdAt });
     if (!createdTime) return false;
-    return Date.now() - createdTime < 1000 * 60 * 60 * 48;
+    return Date.now() - createdTime < NEW_PRODUCT_MAX_AGE;
 }
 
 function catalogSkeletonCards(count = 8) {
@@ -1239,6 +1240,13 @@ function loadProducts() {
         });
 
         if (productsMode === 'new-arrivals') {
+            const now = Date.now();
+            for (let i = visibleDocs.length - 1; i >= 0; i -= 1) {
+                const createdTime = productTimestampValue({ createdAt: visibleDocs[i].product?.createdAt });
+                if (!createdTime || now - createdTime >= NEW_PRODUCT_MAX_AGE) {
+                    visibleDocs.splice(i, 1);
+                }
+            }
             visibleDocs.sort((a, b) => productTimestampValue(b.product) - productTimestampValue(a.product));
         }
 
